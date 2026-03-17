@@ -38,7 +38,7 @@ npm run dev
 | `AI_API_KEY` | AI 接口 Key（仅服务端读取，不暴露到前端） | — |
 | `AI_BASE_URL` | AI 接口地址（兼容 OpenAI 格式） | https://api.openai.com |
 | `AI_MODEL` | 使用的模型 | gpt-4o |
-| `JWT_SECRET` | JWT 签名密钥，生产环境必须设置 | prompt-hub-secret-key-change-in-production |
+| `JWT_SECRET` | JWT 签名密钥，**生产环境必须设置**，可用 `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` 生成 | — |
 
 ## 功能
 
@@ -129,6 +129,21 @@ src/
 ```
 
 ## 迭代记录
+
+### v1.6（2026-03）
+- **安全加固**：修复 7 个 CRITICAL 级安全漏洞
+  - JWT_SECRET 移除硬编码默认值，未配置时服务启动直接报错
+  - 未登录用户只能访问 PUBLIC 提示词，杜绝私有数据泄露
+  - 导入、批量操作接口添加登录认证，防止匿名写入/删除
+  - 版本历史、版本回滚接口添加认证 + 所有权鉴权
+  - Cookie 生产环境启用 `secure` 标志，防止 HTTPS 下 token 明文传输
+  - 错误响应不再透传内部异常信息
+
+### v1.5（2026-03）
+- **数据权限**：Prompt / Workflow 关联创建者（`userId` 外键），编辑/删除仅限本人或 admin
+- **可见性过滤**：列表接口自动过滤非本人的 PRIVATE Prompt，`?mine=1` 支持只看自己的
+- **前端"我的/全部"切换**：Prompt 列表顶部加 Segmented 快速筛选
+- **Admin 路由保护**：`/admin` 及 `/api/admin/*` 非 admin 角色一律拒绝访问（403 / 重定向首页）
 
 ### v1.4（2026-03）
 - **账户系统**：注册/登录/退出，JWT httpOnly Cookie，全站登录保护

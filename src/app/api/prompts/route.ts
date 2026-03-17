@@ -26,6 +26,8 @@ export async function GET(req: NextRequest) {
       { userId: null },
       { visibility: 'PUBLIC' },
     ]
+  } else {
+    where.visibility = 'PUBLIC'
   }
 
   if (categoryId) {

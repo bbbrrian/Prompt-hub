@@ -1,9 +1,14 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
+import { verifyToken, COOKIE_NAME } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const token = req.cookies.get(COOKIE_NAME)?.value
+  const payload = token ? await verifyToken(token) : null
+  if (!payload) return NextResponse.json({ error: '未登录' }, { status: 401 })
+
   const id = Number(params.id)
   const { versionId } = await req.json()
 
@@ -14,6 +19,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const current = await prisma.prompt.findUnique({ where: { id } })
   if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (current.userId !== payload.userId && payload.role !== 'ADMIN') {
+    return NextResponse.json({ error: '无权限' }, { status: 403 })
+  }
 
   await prisma.promptVersion.create({
     data: {

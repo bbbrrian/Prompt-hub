@@ -26,12 +26,13 @@ export async function POST(req: NextRequest) {
     const res = NextResponse.json({ ok: true, email: user.email, role: user.role })
     res.cookies.set(COOKIE_NAME, token, {
       httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7,
       path: '/',
     })
     return res
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message || '登录失败' }, { status: 500 })
+  } catch {
+    return NextResponse.json({ error: '登录失败' }, { status: 500 })
   }
 }

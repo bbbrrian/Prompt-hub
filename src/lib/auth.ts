@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose'
 
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'prompt-hub-secret-key-change-in-production')
+if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET 环境变量未配置')
+const SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
 const COOKIE_NAME = 'ph_token'
 
 export async function signToken(payload: { userId: number; email: string; role: string }) {
