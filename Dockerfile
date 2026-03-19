@@ -18,19 +18,15 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN npm config set registry https://registry.npmmirror.com
-
-COPY package*.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev
-
-COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY prisma ./prisma
 COPY scripts ./scripts
 COPY src/data ./src/data
 COPY public ./public
-COPY next.config.js ./
 
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma migrate deploy && node scripts/seed-agents.mjs && npm start"]
+CMD ["sh", "-c", "node node_modules/.bin/prisma migrate deploy && node scripts/seed-agents.mjs && node server.js"]

@@ -2,6 +2,11 @@ node_modules/
 .next/
 .env
 *.tsbuildinfo
+*.backup.tsx
+*.backup.ts
+*.backup.css
+*.backup.js
+backups/
 next-env.d.ts
 .claude/
 *.docx

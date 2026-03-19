@@ -1,8 +1,7 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: prompt_hub
       POSTGRES_USER: postgres
@@ -17,6 +16,7 @@ services:
 
   app:
     build: .
+    restart: unless-stopped
     ports:
       - '3000:3000'
     environment:
