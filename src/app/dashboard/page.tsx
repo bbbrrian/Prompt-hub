@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 
 interface Stats {
   totalPrompts: number
+  totalSkills: number
   totalCopies: number
   totalCategories: number
   totalTags: number
@@ -137,7 +138,7 @@ function TrendChart({ data }: { data: { date: string; count: number }[] }) {
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}>
       <defs>
         <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#00ffff44" />
+          <stop offset="0%" stopColor="#1e50ae44" />
           <stop offset="100%" stopColor="transparent" />
         </linearGradient>
       </defs>
@@ -145,9 +146,9 @@ function TrendChart({ data }: { data: { date: string; count: number }[] }) {
         <line key={i} x1={padL} y1={y} x2={W - padR} y2={y} stroke="rgba(255,255,255,0.06)" strokeWidth="1" strokeDasharray="4 4" />
       ))}
       <polygon points={polygon} fill="url(#trendGrad)" />
-      <polyline points={polyline} fill="none" stroke="#00ffff" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      <polyline points={polyline} fill="none" stroke="#7ba8e8" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
       {points.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="3" fill="#00ffff" />
+        <circle key={i} cx={p.x} cy={p.y} r="3" fill="#7ba8e8" />
       ))}
       {data.map((d, i) => {
         if (i % 5 !== 0) return null
@@ -162,10 +163,11 @@ function TrendChart({ data }: { data: { date: string; count: number }[] }) {
 }
 
 const STATS_CONFIG = [
-  { key: 'totalPrompts' as const, label: 'Prompt 总数', icon: '📝', color: '#00ffff', desc: '已沉淀模板' },
-  { key: 'totalCopies' as const, label: '总使用次数', icon: '📋', color: '#bf00ff', desc: '累计调用' },
-  { key: 'totalCategories' as const, label: '分类数量', icon: '📁', color: '#0080ff', desc: '知识维度' },
-  { key: 'totalTags' as const, label: '标签数量', icon: '🏷️', color: '#ff6b6b', desc: '细粒度标记' },
+  { key: 'totalPrompts' as const, label: 'Prompt 总数', icon: '📝', color: '#7ba8e8', desc: '已沉淀模板' },
+  { key: 'totalSkills' as const, label: 'Skill 数量', icon: '⚙️', color: '#5bc8a0', desc: '技能模块' },
+  { key: 'totalCopies' as const, label: '总使用次数', icon: '📋', color: '#9b8de8', desc: '累计调用' },
+  { key: 'totalCategories' as const, label: '分类数量', icon: '📁', color: '#5b9bd5', desc: '知识维度' },
+  { key: 'totalTags' as const, label: '标签数量', icon: '🏷️', color: '#FFA727', desc: '细粒度标记' },
 ]
 
 export default function DashboardPage() {
@@ -221,7 +223,7 @@ export default function DashboardPage() {
       <div className="glass-card p-8 mb-8 animate-slideUp relative overflow-hidden" style={{ animationDelay: '100ms' }}>
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(0,255,255,0.04) 0%, transparent 70%)' }} />
+            style={{ background: 'radial-gradient(circle, rgba(30,80,174,0.04) 0%, transparent 70%)' }} />
         </div>
 
         <div className="relative z-10 flex flex-col lg:flex-row items-center gap-10">
@@ -232,25 +234,25 @@ export default function DashboardPage() {
                 <circle cx="90" cy="90" r="82" fill="none" stroke="url(#ringGrad)" strokeWidth="3"
                   strokeDasharray={`${(stats.totalPrompts / Math.max(totalAssets, 1)) * 515} 515`}
                   strokeLinecap="round" transform="rotate(-90 90 90)"
-                  style={{ animation: 'ringPulse 4s ease-in-out infinite', filter: 'drop-shadow(0 0 6px rgba(0,255,255,0.4))' }} />
+                  style={{ animation: 'ringPulse 4s ease-in-out infinite', filter: 'drop-shadow(0 0 6px rgba(30,80,174,0.5))' }} />
                 <circle cx="90" cy="90" r="68" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="2" />
                 <circle cx="90" cy="90" r="68" fill="none" stroke="url(#ringGrad2)" strokeWidth="2.5"
                   strokeDasharray={`${(stats.totalCopies / Math.max(stats.totalCopies + 100, 1)) * 427} 427`}
                   strokeLinecap="round" transform="rotate(-90 90 90)"
-                  style={{ animation: 'ringPulse 4s ease-in-out infinite 0.5s', filter: 'drop-shadow(0 0 6px rgba(191,0,255,0.3))' }} />
+                  style={{ animation: 'ringPulse 4s ease-in-out infinite 0.5s', filter: 'drop-shadow(0 0 6px rgba(91,188,160,0.4))' }} />
                 <defs>
                   <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#00ffff" />
-                    <stop offset="100%" stopColor="#0080ff" />
+                    <stop offset="0%" stopColor="#1e50ae" />
+                    <stop offset="100%" stopColor="#5b9bd5" />
                   </linearGradient>
                   <linearGradient id="ringGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#bf00ff" />
-                    <stop offset="100%" stopColor="#ff6b6b" />
+                    <stop offset="0%" stopColor="#5bc8a0" />
+                    <stop offset="100%" stopColor="#9b8de8" />
                   </linearGradient>
                 </defs>
               </svg>
               <div className="text-center">
-                <div className="text-3xl font-bold text-cyan-400" style={{ animation: 'countUp 0.8s ease-out both' }}>
+                <div className="text-3xl font-bold" style={{ color: '#7ba8e8', animation: 'countUp 0.8s ease-out both' }}>
                   <AnimatedCounter target={stats.totalPrompts} />
                 </div>
                 <div className="text-xs text-gray-500 mt-1">Prompts</div>
@@ -258,7 +260,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+          <div className="flex-1 grid grid-cols-2 lg:grid-cols-5 gap-4 w-full">
             {STATS_CONFIG.map((item, i) => (
               <div
                 key={item.key}
@@ -294,8 +296,8 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="glass-card p-6 animate-slideUp" style={{ animationDelay: '200ms' }}>
-          <h3 className="text-sm font-semibold text-cyan-400 mb-5 flex items-center gap-2">
-            <span className="w-1 h-4 bg-cyan-400 rounded-full inline-block" />
+          <h3 className="text-sm font-semibold mb-5 flex items-center gap-2" style={{ color: '#7ba8e8' }}>
+            <span className="w-1 h-4 rounded-full inline-block" style={{ background: '#7ba8e8' }} />
             Top 10 最常用 Prompt
           </h3>
           <NeonBarChart
@@ -303,27 +305,27 @@ export default function DashboardPage() {
               label: p.title.length > 20 ? p.title.slice(0, 20) + '...' : p.title,
               value: p.copyCount,
             }))}
-            color="#00ffff"
+            color="#7ba8e8"
             maxVal={topMax}
           />
         </div>
 
         <div className="glass-card p-6 animate-slideUp" style={{ animationDelay: '300ms' }}>
-          <h3 className="text-sm font-semibold text-purple-400 mb-5 flex items-center gap-2">
-            <span className="w-1 h-4 bg-purple-400 rounded-full inline-block" />
+          <h3 className="text-sm font-semibold mb-5 flex items-center gap-2" style={{ color: '#9b8de8' }}>
+            <span className="w-1 h-4 rounded-full inline-block" style={{ background: '#9b8de8' }} />
             标签使用分布
           </h3>
           <NeonTagCloud
             data={stats.tagDistribution.filter(t => t.value > 0)}
-            color="#bf00ff"
+            color="#9b8de8"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="glass-card p-6 animate-slideUp" style={{ animationDelay: '400ms' }}>
-          <h3 className="text-sm font-semibold text-blue-400 mb-5 flex items-center gap-2">
-            <span className="w-1 h-4 bg-blue-400 rounded-full inline-block" />
+          <h3 className="text-sm font-semibold mb-5 flex items-center gap-2" style={{ color: '#5b9bd5' }}>
+            <span className="w-1 h-4 rounded-full inline-block" style={{ background: '#5b9bd5' }} />
             按维度分布
           </h3>
           <NeonBarChart
@@ -331,14 +333,14 @@ export default function DashboardPage() {
               label: d.name,
               value: d.value,
             }))}
-            color="#0080ff"
+            color="#5b9bd5"
             maxVal={Math.max(...stats.promptsByDimension.map(d => d.value), 1)}
           />
         </div>
 
         <div className="glass-card p-6 animate-slideUp" style={{ animationDelay: '500ms' }}>
-          <h3 className="text-sm font-semibold text-blue-400 mb-5 flex items-center gap-2">
-            <span className="w-1 h-4 bg-blue-400 rounded-full inline-block" />
+          <h3 className="text-sm font-semibold mb-5 flex items-center gap-2" style={{ color: '#5b9bd5' }}>
+            <span className="w-1 h-4 rounded-full inline-block" style={{ background: '#5b9bd5' }} />
             最近新增
           </h3>
           <div className="space-y-3">
@@ -349,7 +351,7 @@ export default function DashboardPage() {
                 style={{ animationDelay: `${600 + i * 80}ms` }}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-blue-400 shrink-0 pulse-dot" />
+                  <div className="w-2 h-2 rounded-full shrink-0 pulse-dot" style={{ background: '#5b9bd5' }} />
                   <span className="text-sm text-gray-300">{p.title}</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-gray-600">
@@ -364,32 +366,32 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="glass-card p-6 animate-slideUp" style={{ animationDelay: '650ms' }}>
-          <h3 className="text-sm font-semibold text-green-400 mb-5 flex items-center gap-2">
-            <span className="w-1 h-4 bg-green-400 rounded-full inline-block" />
+          <h3 className="text-sm font-semibold mb-5 flex items-center gap-2" style={{ color: '#5bc8a0' }}>
+            <span className="w-1 h-4 rounded-full inline-block" style={{ background: '#5bc8a0' }} />
             分类使用排行（复制次数）
           </h3>
           <NeonBarChart
             data={stats.categoryCopyStats.map(c => ({ label: c.name, value: c.copyCount }))}
-            color="#00ff88"
+            color="#5bc8a0"
             maxVal={Math.max(...stats.categoryCopyStats.map(c => c.copyCount), 1)}
           />
         </div>
         <div className="glass-card p-6 animate-slideUp" style={{ animationDelay: '700ms' }}>
-          <h3 className="text-sm font-semibold text-orange-400 mb-5 flex items-center gap-2">
-            <span className="w-1 h-4 bg-orange-400 rounded-full inline-block" />
+          <h3 className="text-sm font-semibold mb-5 flex items-center gap-2" style={{ color: '#FFA727' }}>
+            <span className="w-1 h-4 rounded-full inline-block" style={{ background: '#FFA727' }} />
             标签使用排行（复制次数）
           </h3>
           <NeonBarChart
             data={stats.tagCopyStats.map(t => ({ label: t.name, value: t.copyCount }))}
-            color="#ffa500"
+            color="#FFA727"
             maxVal={Math.max(...stats.tagCopyStats.map(t => t.copyCount), 1)}
           />
         </div>
       </div>
 
       <div className="glass-card p-6 mb-8 animate-slideUp" style={{ animationDelay: '600ms' }}>
-        <h3 className="text-sm font-semibold mb-5 flex items-center gap-2" style={{ color: '#00ffff' }}>
-          <span className="w-1 h-4 rounded-full inline-block" style={{ background: '#00ffff' }} />
+        <h3 className="text-sm font-semibold mb-5 flex items-center gap-2" style={{ color: '#7ba8e8' }}>
+          <span className="w-1 h-4 rounded-full inline-block" style={{ background: '#7ba8e8' }} />
           最近 30 天新增趋势
         </h3>
         <TrendChart data={stats.copyTrend} />

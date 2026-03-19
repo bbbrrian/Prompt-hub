@@ -5,9 +5,9 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const keyword = searchParams.get('q') || ''
+  const keyword = (searchParams.get('q') || '').slice(0, 100)
   const page = Number(searchParams.get('page') || '1')
-  const pageSize = Number(searchParams.get('pageSize') || '12')
+  const pageSize = Math.min(Number(searchParams.get('pageSize') || '12'), 50)
 
   if (!keyword.trim()) {
     return NextResponse.json({ items: [], total: 0 })

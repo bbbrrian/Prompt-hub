@@ -21,6 +21,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const id = Number(params.id)
   const token = req.cookies.get(COOKIE_NAME)?.value
   const payload = token ? await verifyToken(token) : null
+  if (!payload) return NextResponse.json({ error: '未登录' }, { status: 401 })
 
   const body = await req.json()
   const { title, content, description, author, categoryIds, tagIds, variables, visibility, department } = body
@@ -35,7 +36,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const current = await prisma.prompt.findUnique({ where: { id } })
   if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  if (current.userId !== null && payload?.userId !== current.userId && payload?.role !== 'admin') {
+  if (payload.userId !== current.userId && payload.role !== 'admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -86,11 +87,12 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   const id = Number(params.id)
   const token = req.cookies.get(COOKIE_NAME)?.value
   const payload = token ? await verifyToken(token) : null
+  if (!payload) return NextResponse.json({ error: '未登录' }, { status: 401 })
 
   const current = await prisma.prompt.findUnique({ where: { id } })
   if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  if (current.userId !== null && payload?.userId !== current.userId && payload?.role !== 'admin') {
+  if (payload.userId !== current.userId && payload.role !== 'admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

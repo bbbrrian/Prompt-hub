@@ -1,0 +1,44 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { verifyToken, COOKIE_NAME } from '@/lib/auth'
+import fs from 'fs'
+import path from 'path'
+
+export const dynamic = 'force-dynamic'
+
+export async function POST(req: NextRequest) {
+  const token = req.cookies.get(COOKIE_NAME)?.value
+  const payload = token ? await verifyToken(token) : null
+  if (!payload) return NextResponse.json({ error: '未登录' }, { status: 401 })
+
+  const formData = await req.formData()
+  const file = formData.get('file') as File | null
+  const skillId = formData.get('skillId') as string | null
+
+  if (!file) return NextResponse.json({ error: '未上传文件' }, { status: 400 })
+
+  const MAX_SIZE = 10 * 1024 * 1024
+  const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/pdf']
+  if (file.size > MAX_SIZE) return NextResponse.json({ error: '文件不能超过 10MB' }, { status: 400 })
+  if (!ALLOWED_TYPES.includes(file.type)) return NextResponse.json({ error: '不支持的文件类型' }, { status: 400 })
+
+  const ext = path.extname(file.name).replace(/[^.a-zA-Z0-9]/g, '').toLowerCase()
+  const filename = `${crypto.randomUUID()}${ext}`
+
+  const id = (skillId || 'temp').replace(/[^a-zA-Z0-9_-]/g, '')
+  const dir = path.join(process.cwd(), 'public', 'uploads', 'skills', id, 'assets')
+  fs.mkdirSync(dir, { recursive: true })
+
+  const buffer = Buffer.from(await file.arrayBuffer())
+  const filePath = path.join(dir, filename)
+  fs.writeFileSync(filePath, buffer)
+
+  const storedPath = `/uploads/skills/${id}/assets/${filename}`
+
+  return NextResponse.json({
+    filename,
+    originalName: file.name,
+    mimetype: file.type,
+    size: file.size,
+    storedPath,
+  })
+}

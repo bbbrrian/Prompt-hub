@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const page = Number(searchParams.get('page') || '1')
-  const pageSize = Number(searchParams.get('pageSize') || '12')
+  const pageSize = Math.min(Number(searchParams.get('pageSize') || '12'), 100)
   const categoryId = searchParams.get('categoryId')
   const tagId = searchParams.get('tagId')
   const mine = searchParams.get('mine') === '1'
@@ -60,6 +60,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const token = req.cookies.get(COOKIE_NAME)?.value
   const payload = token ? await verifyToken(token) : null
+  if (!payload) return NextResponse.json({ error: '未登录' }, { status: 401 })
 
   const body = await req.json()
   const { title, content, description, author, categoryIds, tagIds, variables, visibility, department } = body

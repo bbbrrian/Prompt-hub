@@ -19,7 +19,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const current = await prisma.prompt.findUnique({ where: { id } })
   if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (current.userId !== payload.userId && payload.role !== 'ADMIN') {
+  if (current.userId !== payload.userId && payload.role !== 'admin') {
     return NextResponse.json({ error: '无权限' }, { status: 403 })
   }
 

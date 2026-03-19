@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   const [
     totalPrompts,
+    totalSkills,
     totalCategories,
     totalTags,
     copyAgg,
@@ -17,6 +18,7 @@ export async function GET() {
     tagCopyRaw,
   ] = await Promise.all([
     prisma.prompt.count({ where: { isDeleted: false } }),
+    prisma.skill.count(),
     prisma.category.count(),
     prisma.tag.count(),
     prisma.prompt.aggregate({ _sum: { copyCount: true }, where: { isDeleted: false } }),
@@ -117,6 +119,7 @@ export async function GET() {
 
   return NextResponse.json({
     totalPrompts,
+    totalSkills,
     totalCopies: copyAgg._sum.copyCount || 0,
     totalCategories,
     totalTags,

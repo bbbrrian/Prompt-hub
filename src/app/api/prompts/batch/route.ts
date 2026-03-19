@@ -11,6 +11,19 @@ export async function POST(req: NextRequest) {
 
   if (!ids?.length) return NextResponse.json({ error: 'ids required' }, { status: 400 })
 
+  // 所有权校验：非 admin 只能操作自己的 prompt
+  if (payload.role !== 'admin' && action !== 'export-skill') {
+    const owned = await prisma.prompt.findMany({
+      where: { id: { in: ids }, userId: payload.userId },
+      select: { id: true },
+    })
+    const ownedIds = new Set(owned.map((p: { id: number }) => p.id))
+    const unauthorized = ids.filter((id: number) => !ownedIds.has(id))
+    if (unauthorized.length > 0) {
+      return NextResponse.json({ error: '无权操作部分 prompt' }, { status: 403 })
+    }
+  }
+
   switch (action) {
     case 'delete':
       await prisma.prompt.updateMany({

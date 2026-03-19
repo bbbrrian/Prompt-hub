@@ -10,6 +10,7 @@ const AGENT_COUNT = AGENTS.length
 
 interface QuickStats {
   totalPrompts: number
+  totalSkills: number
   totalCopies: number
   totalCategories: number
   totalTags: number
@@ -35,31 +36,29 @@ export default function Home() {
     <div className="-mt-4">
       <section className="relative flex flex-col items-center justify-center min-h-[50vh] text-center overflow-hidden">
         <NeuralNetworkBg />
-        <div className="animate-fadeIn relative z-10">
+        <div className="animate-fadeIn relative z-10 mt-16">
           <div className="flex justify-center mb-5">
-            <span className="inline-flex items-center justify-center w-16 h-16 rounded-2xl text-3xl"
-              style={{ background: 'linear-gradient(135deg, rgba(0,255,255,0.15), rgba(0,128,255,0.1))', border: '1px solid rgba(0,255,255,0.2)', boxShadow: '0 0 30px rgba(0,255,255,0.1)' }}>
-              ⚡
-            </span>
+            <span className="text-5xl">⚡</span>
           </div>
-          <h2 className="text-5xl font-bold neon-text mb-3 tracking-tight">Prompt Hub</h2>
-          <p className="text-gray-300 text-lg font-medium mb-1.5">公司内部 AI 提示词共享平台</p>
-          <p className="text-gray-600 text-xs mb-10 tracking-widest uppercase">规范驱动 · 模板沉淀 · 效果可量化</p>
+          <h2 className="text-4xl font-bold mb-2 tracking-tight neon-text">Prompt Hub</h2>
+          <p className="text-gray-300 text-lg font-medium mb-2">AI 提示词共享平台</p>
+          <p className="text-gray-600 text-xs mb-10 tracking-widest">规范驱动 · 模板沉淀 · 效果可量化</p>
           <div className="flex gap-4 justify-center">
             <a href="/prompts" className="neon-button text-base px-8 py-3">浏览 Prompt 库</a>
-            <a href="/prompts/new" className="neon-button text-base px-8 py-3" style={{ borderColor: 'rgba(191, 0, 255, 0.3)', color: '#bf00ff' }}>
+            <a href="/prompts/new" className="neon-button text-base px-8 py-3" style={{ borderColor: 'rgba(63, 35, 180, 0.4)', color: '#9b8de8' }}>
               创建新 Prompt
             </a>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 md:grid-cols-5 gap-4 mt-16 w-full max-w-4xl animate-slideUp relative z-10">
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mt-16 w-full max-w-5xl animate-slideUp relative z-10">
           {[
-            { label: 'Prompt 总数', value: stats?.totalPrompts ?? '—', color: '#00ffff', href: '/prompts' },
-            { label: '使用次数', value: stats?.totalCopies ?? '—', color: '#bf00ff', href: '/dashboard' },
-            { label: '分类数', value: stats?.totalCategories ?? '—', color: '#0080ff', href: '/categories' },
-            { label: '标签数', value: stats?.totalTags ?? '—', color: '#ff6b6b', href: '/prompts' },
-            { label: 'Agent 数', value: AGENT_COUNT, color: '#00ff88', href: '/agents' },
+            { label: 'Prompt 总数', value: stats?.totalPrompts ?? '—', color: '#7ba8e8', href: '/prompts' },
+            { label: 'Skill 数量', value: stats?.totalSkills ?? '—', color: '#5bc8a0', href: '/skills' },
+            { label: '使用次数', value: stats?.totalCopies ?? '—', color: '#9b8de8', href: '/dashboard' },
+            { label: '分类数', value: stats?.totalCategories ?? '—', color: '#5b9bd5', href: '/categories' },
+            { label: '标签数', value: stats?.totalTags ?? '—', color: '#FFA727', href: '/prompts' },
+            { label: 'Agent 数', value: AGENT_COUNT, color: '#e87b7b', href: '/agents' },
           ].map((s) => (
             <a key={s.label} href={s.href} className="text-center py-4 glass-card hover:scale-105 transition-transform block">
               <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
@@ -80,7 +79,7 @@ export default function Home() {
               style={{ animationDelay: `${i * 100}ms` }}
             >
               <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">{f.icon}</div>
-              <h4 className="text-sm font-semibold text-cyan-300 mb-2">{f.title}</h4>
+              <h4 className="text-sm font-semibold mb-2" style={{ color: '#7ba8e8' }}>{f.title}</h4>
               <p className="text-xs text-gray-500 leading-relaxed">{f.desc}</p>
             </a>
           ))}

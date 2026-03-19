@@ -40,6 +40,7 @@ model Tag {
   color     String      @default("#00ffff") @db.VarChar(7)
   createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz()
   prompts   PromptTag[]
+  skills    SkillTag[]
 
   @@map("tag")
 }
@@ -71,6 +72,7 @@ model Prompt {
   versions    PromptVersion[]
   workflowSteps WorkflowStep[]
   favorites   Favorite[]
+  skills      Skill[]
 
   @@index([createdAt(sort: Desc)])
   @@map("prompt")
@@ -147,6 +149,7 @@ model User {
   favorites    Favorite[]
   prompts      Prompt[]
   workflows    Workflow[]
+  skills       Skill[]
 
   @@map("user")
 }
@@ -162,4 +165,38 @@ model Favorite {
   @@unique([userId, promptId])
   @@index([userId])
   @@map("favorite")
+}
+
+model Skill {
+  id            Int        @id @default(autoincrement())
+  name          String     @db.VarChar(200)
+  description   String     @db.Text
+  content       String     @db.Text
+  references    Json?
+  scripts       Json?
+  assets        Json?
+  author        String?    @db.VarChar(100)
+  promptId      Int?       @map("prompt_id")
+  userId        Int?       @map("user_id")
+  version       Int        @default(1)
+  downloadCount Int        @default(0) @map("download_count")
+  isDeleted     Boolean    @default(false) @map("is_deleted")
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz()
+  prompt        Prompt?    @relation(fields: [promptId], references: [id], onDelete: SetNull)
+  user          User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tags          SkillTag[]
+
+  @@index([createdAt(sort: Desc)])
+  @@map("skill")
+}
+
+model SkillTag {
+  skillId Int   @map("skill_id")
+  tagId   Int   @map("tag_id")
+  skill   Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  tag     Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([skillId, tagId])
+  @@map("skill_tag")
 }

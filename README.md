@@ -67,6 +67,15 @@ npm run dev
 
 > ⚠️ 建议单次安装不超过 16 个 Skill，过多会导致模型质量下降
 
+### Skill 库
+- Prompt 详情页"生成 Skill"按钮跳转 Skill Builder
+- **Skill Builder**：可视化编辑 skill name、触发描述、prompt 内容、references、scripts、assets
+- AI 辅助生成触发条件描述（`suggest-skill-description`）
+- 客户端直接打包下载 ZIP（jszip，无需服务端）
+- **保存到库**：Skill 持久化存储（PostgreSQL），支持版本管理
+- Skill 库列表页（`/skills`）：搜索、编辑、下载、删除、导入
+- assets 二进制文件存磁盘（`/public/uploads/skills/{id}/assets/`），数据库存元数据
+
 ### 账户系统
 - 邮箱 + 密码注册/登录
 - JWT 存储于 httpOnly Cookie，防 XSS
@@ -107,20 +116,25 @@ src/
   app/
     api/
       ai/
-        generate-prompt/   # AI 生成 Prompt（流式）
-        optimize-prompt/   # AI 优化 Prompt（流式）
+        generate-prompt/          # AI 生成 Prompt（流式）
+        optimize-prompt/          # AI 优化 Prompt（流式）
+        suggest-skill-description/ # AI 生成 Skill 触发条件描述
       prompts/             # Prompt CRUD、批量操作、导出、版本
+      skills/              # Skill CRUD、下载 ZIP、上传 asset、导入
       workflows/           # 工作流 CRUD、Skill 导出
       stats/               # 数据看板统计
       categories/          # 分类管理
       tags/                # 标签管理
     prompts/               # Prompt 列表、新建、编辑、AI 生成页
+      [id]/skill-builder/  # Skill Builder 页面
+    skills/                # Skill 库列表页
     workflows/             # 工作流页
     dashboard/             # 数据看板
     admin/                 # 管理配置（AI 参数等）
   components/ui/
     PromptCard.tsx         # Prompt 卡片
     PromptDetail.tsx       # Prompt 详情 Modal（含版本历史、AI 优化、Skill 导出）
+    SkillBuilder.tsx       # Skill 可视化编辑器（name/description/references/scripts/assets）
     CategoryFilter.tsx     # 分类过滤器
     SearchBar.tsx          # 搜索栏
   store/
@@ -129,6 +143,14 @@ src/
 ```
 
 ## 迭代记录
+
+### v1.7（2026-03）
+- **Skill Builder**：可视化编辑器，支持 name/description/references/scripts/assets 编辑，AI 辅助生成触发描述，客户端 jszip 打包下载
+- **Skill 库**：Skill 持久化存储（PostgreSQL `skill` 表），列表页（`/skills`）支持搜索、编辑、下载、删除、导入
+- **Skill 指南**：Builder 页内置"查看指南" Drawer，渲染 `skill-guide.md`（8 章完整指南，涵盖入门到精通）
+- **收藏夹**：Prompt 一键收藏，独立收藏页（`/favorites`）
+- **全局搜索**：⌘K / Ctrl+K 唤起，实时全文搜索
+- **Docker 部署**：`docker compose up -d --build` 一键启动，自动执行数据库迁移
 
 ### v1.6（2026-03）
 - **安全加固**：修复 7 个 CRITICAL 级安全漏洞

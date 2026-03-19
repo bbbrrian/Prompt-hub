@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Modal, Tag, message, Input, Tabs, Timeline, Button, Popconfirm, Spin, Alert, Select, InputNumber } from 'antd'
+import { Modal, Tag, message, Input, Tabs, Timeline, Button, Popconfirm, Spin, Select, InputNumber } from 'antd'
 import { CopyOutlined, EditOutlined, HistoryOutlined, RollbackOutlined, ExportOutlined, HeartOutlined, HeartFilled } from '@ant-design/icons'
 import { useRouter } from 'next/navigation'
 import type { PromptItem, PromptVariable } from '@/store/prompt'
@@ -36,7 +36,6 @@ export default function PromptDetail({ item, open, onClose }: Props) {
   const [varValues, setVarValues] = useState<Record<string, string>>({})
   const [versions, setVersions] = useState<VersionItem[]>([])
   const [activeTab, setActiveTab] = useState('content')
-  const [installGuideOpen, setInstallGuideOpen] = useState(false)
   const [isFavorited, setIsFavorited] = useState(false)
 
   const [optimizeOpen, setOptimizeOpen] = useState(false)
@@ -208,11 +207,6 @@ export default function PromptDetail({ item, open, onClose }: Props) {
     onClose()
   }
 
-  const handleInstallDownload = () => {
-    window.location.href = `/api/prompts/${item!.id}/export-skill`
-    setInstallGuideOpen(false)
-  }
-
   if (!item) return null
 
   return (
@@ -315,12 +309,12 @@ export default function PromptDetail({ item, open, onClose }: Props) {
               >
                 {isFavorited ? <HeartFilled /> : <HeartOutlined />}
               </button>
-              <button
+              <a
+                href={`/prompts/${item.id}/skill-builder`}
                 className="neon-button !px-3 !py-1 !text-xs"
-                onClick={() => setInstallGuideOpen(true)}
               >
-                <ExportOutlined className="mr-1" />导出为 Skill
-              </button>
+                <ExportOutlined className="mr-1" />生成 Skill
+              </a>
               <button
                 className="neon-button !px-3 !py-1 !text-xs"
                 onClick={handleOptimizeOpen}
@@ -419,32 +413,6 @@ export default function PromptDetail({ item, open, onClose }: Props) {
         </div>
       </Modal>
 
-      <Modal
-        open={installGuideOpen}
-        onCancel={() => setInstallGuideOpen(false)}
-        title="安装 Skill 指南"
-        footer={
-          <div className="flex justify-end gap-2">
-            <Button onClick={() => setInstallGuideOpen(false)}>取消</Button>
-            <Button type="primary" onClick={handleInstallDownload}>立即下载</Button>
-          </div>
-        }
-        width={520}
-      >
-        <div className="space-y-4 py-2">
-          <ol className="space-y-2 text-sm text-gray-300 list-decimal list-inside">
-            <li>解压下载的 zip 文件到任意目录</li>
-            <li>确认文件夹内包含 SKILL.md 文件</li>
-            <li>将文件夹复制到 ~/.claude/skills/ 目录下</li>
-            <li>或在 ~/.claude/settings.json 的 skillsDirectories 中添加路径</li>
-            <li>重启 Claude Code 即可使用 /skill-name 调用</li>
-          </ol>
-          <Alert
-            type="warning"
-            message="建议单次安装不超过 16 个 Skill，过多会导致模型质量下降"
-          />
-        </div>
-      </Modal>
     </>
   )
 }

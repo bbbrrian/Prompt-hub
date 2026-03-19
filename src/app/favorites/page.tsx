@@ -44,7 +44,7 @@ export default function FavoritesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {prompts.map(p => (
             <div key={p.id} className="relative group">
-              <PromptCard item={p} onClick={() => setSelected(p)} keyword="" />
+              <PromptCard item={p} onView={() => setSelected(p)} />
               <button
                 onClick={() => handleUnfavorite(p.id)}
                 className="absolute top-3 right-10 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-all z-10"

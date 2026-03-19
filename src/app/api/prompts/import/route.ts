@@ -128,6 +128,9 @@ export async function POST(req: NextRequest) {
   if (!items || items.length === 0) {
     return NextResponse.json({ error: '无有效数据' }, { status: 400 })
   }
+  if (items.length > 500) {
+    return NextResponse.json({ error: '单次最多导入 500 条' }, { status: 400 })
+  }
 
   const { created, skipped } = await processItems(items)
   return NextResponse.json({ created, skipped, total: items.length })

@@ -5,3 +5,15 @@ node_modules/
 next-env.d.ts
 .claude/
 *.docx
+docker-compose.override.yml
+*.xteam.tsx
+*.xteam.css
+*.xteam.js
+tailwind.config.neon.js
+src/styles/globals.neon.css
+public/logo.jpg
+public/uploads/
+*.jpg
+*.jpeg
+*.png
+!public/placeholder*
