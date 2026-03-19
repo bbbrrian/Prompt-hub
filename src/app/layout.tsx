@@ -35,8 +35,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <a
         href={href}
         className={`text-sm transition-colors whitespace-nowrap pb-1 ${active ? 'nav-active-indicator' : ''}`}
-        style={{ color: active ? '#7ba8e8' : undefined }}
-        onMouseEnter={e => { if (!active) (e.target as HTMLElement).style.color = '#7ba8e8' }}
+        style={{ color: active ? '#00ffff' : undefined }}
+        onMouseEnter={e => { if (!active) (e.target as HTMLElement).style.color = '#00ffff' }}
         onMouseLeave={e => { if (!active) (e.target as HTMLElement).style.color = '' }}
       >
         {label}
@@ -52,7 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           theme={{
             algorithm: theme.darkAlgorithm,
             token: {
-              colorPrimary: '#1e50ae',
+              colorPrimary: '#00ffff',
               colorBgContainer: 'rgba(255, 255, 255, 0.03)',
               colorBgElevated: 'rgba(10, 10, 30, 0.95)',
               colorBorder: 'rgba(255, 255, 255, 0.1)',
@@ -69,7 +69,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-6">
                   <div className="flex items-center gap-6 shrink-0">
                     <a href="/" className="flex items-center gap-2">
-                      <span className="text-base font-bold tracking-wide" style={{ color: '#00ffff' }}>⚡ Prompt Hub</span>
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xl font-bold neon-text tracking-wider"
+                        style={{ background: 'rgba(0,255,255,0.06)', border: '1px solid rgba(0,255,255,0.12)' }}>
+                        ⚡ Prompt Hub
+                      </span>
                     </a>
                     {navLink('/', '首页')}
                     {navLink('/guide', 'AI 指南')}
@@ -99,7 +102,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                       >
                         <Avatar
                           size={32}
-                          style={{ backgroundColor: '#1e50ae', color: '#ffffff', cursor: 'pointer', fontWeight: 600 }}
+                          style={{ backgroundColor: '#00ffff', color: '#0a0a1e', cursor: 'pointer', fontWeight: 600 }}
                         >
                           {user.email[0].toUpperCase()}
                         </Avatar>

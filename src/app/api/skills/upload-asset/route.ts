@@ -17,9 +17,7 @@ export async function POST(req: NextRequest) {
   if (!file) return NextResponse.json({ error: '未上传文件' }, { status: 400 })
 
   const MAX_SIZE = 10 * 1024 * 1024
-  const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/pdf']
   if (file.size > MAX_SIZE) return NextResponse.json({ error: '文件不能超过 10MB' }, { status: 400 })
-  if (!ALLOWED_TYPES.includes(file.type)) return NextResponse.json({ error: '不支持的文件类型' }, { status: 400 })
 
   const ext = path.extname(file.name).replace(/[^.a-zA-Z0-9]/g, '').toLowerCase()
   const filename = `${crypto.randomUUID()}${ext}`

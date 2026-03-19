@@ -230,7 +230,11 @@ export default function SkillBuilder({ prompt, skillId }: Props) {
       form.append('file', a.file)
       if (editingSkillId) form.append('skillId', String(editingSkillId))
       const r = await fetch('/api/skills/upload-asset', { method: 'POST', body: form })
-      if (!r.ok) return null
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}))
+        message.error(`文件 ${a.name} 上传失败: ${err.error || '未知错误'}`)
+        return null
+      }
       const d = await r.json()
       return { filename: d.filename, storedPath: d.storedPath }
     }))
