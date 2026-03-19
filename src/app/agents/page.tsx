@@ -1,255 +1,253 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
-import { Input, Tag, message, Select, Drawer, Button } from 'antd'
-import { SearchOutlined, CopyOutlined, RobotOutlined, EditOutlined, CheckOutlined, SaveOutlined } from '@ant-design/icons'
-import { AGENTS, DIVISIONS, type Agent } from '@/data/agents'
+import { useState, useEffect, useCallback } from 'react'
+import { Input, Pagination, message, Popconfirm, Empty, Spin, Modal, Tag, Select } from 'antd'
+import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined } from '@ant-design/icons'
+import { useRouter } from 'next/navigation'
 
-const { TextArea } = Input
-const STORAGE_KEY = 'agent_overrides'
-
-function getOverrides(): Record<string, string> {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') } catch { return {} }
-}
-function saveOverride(id: string, prompt: string) {
-  const o = getOverrides(); o[id] = prompt; localStorage.setItem(STORAGE_KEY, JSON.stringify(o))
-}
-function removeOverride(id: string) {
-  const o = getOverrides(); delete o[id]; localStorage.setItem(STORAGE_KEY, JSON.stringify(o))
+interface AgentItem {
+  id: number
+  name: string
+  description: string
+  author: string | null
+  model: string | null
+  version: number
+  createdAt: string
+  tags: { tag: { id: number; name: string; color: string } }[]
 }
 
-const DIVISION_COLORS: Record<string, string> = {
-  engineering: '#00ffff',
-  design: '#bf00ff',
-  marketing: '#ff6b6b',
-  sales: '#ffa500',
-  product: '#00ff88',
-  'project-management': '#0080ff',
-  testing: '#ffff00',
-  support: '#ff69b4',
-  'game-development': '#7fff00',
-  specialized: '#ff4500',
-  'spatial-computing': '#00bfff',
-  academic: '#daa520',
+interface AgentDetail extends AgentItem {
+  systemPrompt: string
+  tools: any
 }
 
 export default function AgentsPage() {
+  const router = useRouter()
+  const [items, setItems] = useState<AgentItem[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
-  const [division, setDivision] = useState<string>('all')
-  const [selected, setSelected] = useState<Agent | null>(null)
-  const [editedPrompt, setEditedPrompt] = useState('')
-  const [editing, setEditing] = useState(false)
-  const [overrides, setOverrides] = useState<Record<string, string>>({})
+  const [tagFilter, setTagFilter] = useState('工程')
+  const [loading, setLoading] = useState(false)
+  const [detail, setDetail] = useState<AgentDetail | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
 
-  useEffect(() => { setOverrides(getOverrides()) }, [])
+  const DIVISION_TAGS = ['工程','设计','营销','销售','产品','项目管理','测试','支持','游戏开发','专业化','空间计算','学术']
 
-  const filtered = useMemo(() => {
-    return AGENTS.filter(a => {
-      const matchDivision = division === 'all' || a.division === division
-      const q = search.toLowerCase()
-      const matchSearch = !q || a.name.toLowerCase().includes(q) || a.nameZh.includes(q) || a.description.toLowerCase().includes(q) || a.divisionZh.includes(q)
-      return matchDivision && matchSearch
-    })
-  }, [search, division])
-
-  const openAgent = (agent: Agent) => {
-    setSelected(agent)
-    setEditedPrompt(overrides[agent.id] ?? agent.systemPrompt)
-    setEditing(false)
-  }
-
-  const handleSave = () => {
-    if (!selected) return
-    if (editedPrompt === selected.systemPrompt) {
-      removeOverride(selected.id)
-      setOverrides(o => { const n = { ...o }; delete n[selected.id]; return n })
-    } else {
-      saveOverride(selected.id, editedPrompt)
-      setOverrides(o => ({ ...o, [selected.id]: editedPrompt }))
+  const load = useCallback(async () => {
+    setLoading(true)
+    const params = new URLSearchParams({ page: String(page), pageSize: '12' })
+    if (search) params.set('search', search)
+    if (tagFilter) params.set('tag', tagFilter)
+    const res = await fetch(`/api/agents?${params}`)
+    if (res.ok) {
+      const data = await res.json()
+      setItems(data.items)
+      setTotal(data.total)
     }
-    setEditing(false)
-    message.success('已保存')
+    setLoading(false)
+  }, [page, search, tagFilter])
+
+  useEffect(() => { load() }, [load])
+
+  const handleSearch = (value: string) => {
+    setSearch(value)
+    setPage(1)
   }
 
-  const handleRestore = () => {
-    if (!selected) return
-    removeOverride(selected.id)
-    setOverrides(o => { const n = { ...o }; delete n[selected.id]; return n })
-    setEditedPrompt(selected.systemPrompt)
-    setEditing(false)
-    message.success('已还原')
+  const handleTagFilter = (value: string) => {
+    setTagFilter(value)
+    setPage(1)
   }
 
-  const handleCopy = async (prompt: string, name: string) => {
-    await navigator.clipboard.writeText(prompt)
-    message.success(`已复制 ${name} 的 System Prompt`)
+  const handleDelete = async (id: number) => {
+    const res = await fetch(`/api/agents/${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      message.success('已删除')
+      load()
+    } else {
+      const err = await res.json().catch(() => ({}))
+      message.error(err.error || '删除失败')
+    }
   }
 
-  const color = selected ? DIVISION_COLORS[selected.division] : '#00ffff'
-  const isModified = selected ? !!overrides[selected.id] : false
+  const handleViewDetail = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setDetailLoading(true)
+    setDetail(null)
+    const res = await fetch(`/api/agents/${id}`)
+    if (res.ok) {
+      setDetail(await res.json())
+    } else {
+      message.error('加载失败')
+    }
+    setDetailLoading(false)
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <RobotOutlined className="text-cyan-400 text-2xl" />
-        <h2 className="text-2xl font-bold neon-text">Agent 库</h2>
-        <span className="text-gray-500 text-sm">({filtered.length} / {AGENTS.length})</span>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold neon-text">Agent 库</h1>
+        <button className="neon-button !px-3 !py-1.5 !text-sm" onClick={() => router.push('/agents/new')}>
+          <PlusOutlined className="mr-1" />新建
+        </button>
       </div>
 
-      <div className="flex gap-3 flex-wrap">
-        <Input
-          prefix={<SearchOutlined className="text-gray-500" />}
-          placeholder="搜索 Agent..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-64"
+      <div className="flex gap-3">
+        <Input.Search
+          placeholder="搜索名称、描述或作者..."
           allowClear
+          enterButton={<SearchOutlined />}
+          onSearch={handleSearch}
+          className="max-w-md"
         />
         <Select
-          value={division}
-          onChange={setDivision}
-          className="w-40"
-          options={[
-            { label: '全部分类', value: 'all' },
-            ...DIVISIONS.map(d => ({ label: d.nameZh, value: d.id })),
-          ]}
+          allowClear
+          value={tagFilter || undefined}
+          placeholder="按分类筛选"
+          options={DIVISION_TAGS.map(t => ({ value: t, label: t }))}
+          onChange={v => handleTagFilter(v ?? '')}
+          className="w-36"
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filtered.map(agent => (
-          <div
-            key={agent.id}
-            className="glass-card p-4 group hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-            style={{ borderColor: overrides[agent.id] ? `${DIVISION_COLORS[agent.division]}55` : `${DIVISION_COLORS[agent.division]}22` }}
-            onClick={() => openAgent(agent)}
-          >
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex-1 min-w-0 mr-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <div className="font-semibold text-gray-100 text-sm">{agent.emoji} {agent.nameZh}</div>
-                  {overrides[agent.id] && <span className="text-[10px] text-cyan-400 border border-cyan-400/30 rounded px-1">已定制</span>}
+      <Spin spinning={loading}>
+        {items.length === 0 && !loading ? (
+          <Empty description="暂无 Agent" className="py-16" />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {items.map(item => (
+              <div
+                key={item.id}
+                className="glass-card p-5 space-y-3 group cursor-pointer hover:border-cyan-500/30 transition-colors"
+                onClick={e => handleViewDetail(item.id, e)}
+              >
+                <div className="flex items-start justify-between">
+                  <h3 className="text-base font-semibold text-gray-100 truncate flex-1 mr-2 font-mono">{item.name}</h3>
+                  <span className="badge shrink-0">v{item.version}</span>
                 </div>
-                <div className="text-xs text-gray-600 mt-0.5">{agent.name}</div>
-              </div>
-              <Tag
-                className="!text-xs shrink-0"
-                style={{
-                  background: `${DIVISION_COLORS[agent.division]}15`,
-                  borderColor: `${DIVISION_COLORS[agent.division]}40`,
-                  color: DIVISION_COLORS[agent.division],
-                }}
-              >
-                {agent.divisionZh}
-              </Tag>
-            </div>
-            <p className="text-xs text-gray-400 mb-3 line-clamp-2">{agent.description}</p>
-            <div className="text-xs text-gray-600 font-mono line-clamp-2 bg-white/[0.02] rounded p-2 mb-3">
-              {(overrides[agent.id] ?? agent.systemPrompt).slice(0, 120)}...
-            </div>
-            <div className="flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-              <span className="text-xs text-gray-600">点击查看完整内容</span>
-              <button
-                onClick={e => { e.stopPropagation(); handleCopy(overrides[agent.id] ?? agent.systemPrompt, agent.name) }}
-                className="neon-button !px-3 !py-1 !text-xs"
-              >
-                <CopyOutlined className="mr-1" />快速复制
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
 
-      {filtered.length === 0 && (
-        <div className="text-center py-20 text-gray-600">无匹配 Agent</div>
+                <p className="text-sm text-gray-400 line-clamp-2">{item.description || '无描述'}</p>
+
+                {item.tags?.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {item.tags.map(({ tag }) => (
+                      <Tag key={tag.id} color={tag.color} className="!text-xs !py-0 !leading-5 !m-0">{tag.name}</Tag>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    {item.author && <span className="text-gray-400">{item.author}</span>}
+                    {item.model && <span className="text-cyan-600">{item.model}</span>}
+                    <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      className="text-gray-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-white/10 p-1.5"
+                      title="查看"
+                      onClick={e => handleViewDetail(item.id, e)}
+                    >
+                      <EyeOutlined />
+                    </button>
+                    <button
+                      className="text-gray-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-white/10 p-1.5"
+                      title="编辑"
+                      onClick={e => { e.stopPropagation(); router.push(`/agents/${item.id}/edit`) }}
+                    >
+                      <EditOutlined />
+                    </button>
+                    <Popconfirm title="确定删除？" onConfirm={() => handleDelete(item.id)} onClick={e => e.stopPropagation()}>
+                      <button className="text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-white/10 p-1.5" title="删除">
+                        <DeleteOutlined />
+                      </button>
+                    </Popconfirm>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Spin>
+
+      {total > 12 && (
+        <div className="flex justify-center">
+          <Pagination current={page} total={total} pageSize={12} onChange={setPage} showSizeChanger={false} />
+        </div>
       )}
 
-      <Drawer
-        open={!!selected}
-        onClose={() => setSelected(null)}
-        width={640}
-        title={null}
-        styles={{ body: { padding: 0 }, header: { display: 'none' } }}
+      <Modal
+        open={!!detail || detailLoading}
+        onCancel={() => setDetail(null)}
+        footer={null}
+        width={800}
+        title={detail ? (
+          <span className="font-mono text-base">
+            {detail.name}
+            <span className="text-xs font-normal text-gray-400 ml-2">v{detail.version}</span>
+          </span>
+        ) : '加载中...'}
       >
-        {selected && (
-          <div className="h-full flex flex-col">
-            <div
-              className="px-6 py-5 border-b border-white/[0.06]"
-              style={{ background: `linear-gradient(135deg, ${color}08, transparent)` }}
-            >
-              <div className="flex items-start justify-between">
+        {detailLoading && <div className="py-12 text-center text-gray-400">加载中...</div>}
+        {detail && (
+          <div className="space-y-5 pt-2">
+            {detail.description && (
+              <div>
+                <div className="text-xs text-gray-400 mb-1">描述</div>
+                <p className="text-sm text-gray-200">{detail.description}</p>
+              </div>
+            )}
+
+            <div className="flex gap-6 text-sm flex-wrap">
+              {detail.author && (
                 <div>
-                  <div className="text-lg font-bold text-gray-100">{selected.emoji} {selected.nameZh}</div>
-                  <div className="text-sm text-gray-500 mt-0.5">{selected.name} · {selected.divisionZh}</div>
+                  <span className="text-xs text-gray-400 mr-1">作者</span>
+                  <span className="text-gray-200">{detail.author}</span>
                 </div>
-                <Tag
-                  style={{
-                    background: `${color}15`,
-                    borderColor: `${color}40`,
-                    color,
-                  }}
-                >
-                  {selected.divisionZh}
-                </Tag>
-              </div>
-              <p className="text-sm text-gray-400 mt-3">{selected.description}</p>
-            </div>
-
-            <div className="flex-1 overflow-auto px-6 py-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">System Prompt</span>
-                <div className="flex items-center gap-3">
-                  {isModified && <span className="text-[10px] text-cyan-400 border border-cyan-400/30 rounded px-1.5 py-0.5">已定制</span>}
-                  <button
-                    onClick={() => setEditing(e => !e)}
-                    className="text-xs text-gray-500 hover:text-cyan-400 transition-colors flex items-center gap-1"
-                  >
-                    {editing ? <><CheckOutlined />取消</> : <><EditOutlined />编辑</>}
-                  </button>
+              )}
+              {detail.model && (
+                <div>
+                  <span className="text-xs text-gray-400 mr-1">模型</span>
+                  <span className="text-cyan-400">{detail.model}</span>
                 </div>
-              </div>
-
-              {editing ? (
-                <TextArea
-                  value={editedPrompt}
-                  onChange={e => setEditedPrompt(e.target.value)}
-                  autoSize={{ minRows: 12, maxRows: 30 }}
-                  className="!font-mono !text-sm"
-                  style={{ background: 'rgba(255,255,255,0.03)', borderColor: `${color}30` }}
-                />
-              ) : (
-                <pre
-                  className="text-sm text-gray-300 whitespace-pre-wrap font-mono rounded-lg p-4 overflow-auto"
-                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
-                >
-                  {editedPrompt}
-                </pre>
+              )}
+              {detail.tags?.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-gray-400 mr-1">标签</span>
+                  {detail.tags.map(({ tag }) => (
+                    <Tag key={tag.id} color={tag.color} className="!text-xs !py-0 !leading-5 !m-0">{tag.name}</Tag>
+                  ))}
+                </div>
               )}
             </div>
 
-            <div
-              className="px-6 py-4 border-t border-white/[0.06] flex items-center justify-between"
-              style={{ background: 'rgba(0,0,0,0.2)' }}
-            >
-              <span className="text-xs text-gray-600">{editedPrompt.length} 字符</span>
-              <div className="flex gap-2">
-                {isModified && !editing && (
-                  <Button size="small" onClick={handleRestore}>还原原版</Button>
-                )}
-                {editing && (
-                  <Button size="small" onClick={handleSave} type="primary" icon={<SaveOutlined />}>保存</Button>
-                )}
-                <button
-                  onClick={() => handleCopy(editedPrompt, selected.name)}
-                  className="neon-button !px-4 !py-1.5 !text-sm"
-                >
-                  <CopyOutlined className="mr-1.5" />复制 System Prompt
-                </button>
-              </div>
+            <div>
+              <div className="text-xs text-gray-400 mb-2">系统提示词</div>
+              <pre className="bg-black/30 rounded-lg p-4 text-xs text-gray-300 font-mono overflow-auto max-h-64 whitespace-pre-wrap">{detail.systemPrompt}</pre>
+            </div>
+
+            {detail.tools && (
+              <details className="bg-black/20 rounded-lg border border-white/[0.06]">
+                <summary className="px-3 py-2 text-xs text-gray-300 cursor-pointer">Tools</summary>
+                <pre className="px-3 pb-3 text-xs text-gray-400 font-mono overflow-auto max-h-48 whitespace-pre-wrap">
+                  {JSON.stringify(detail.tools, null, 2)}
+                </pre>
+              </details>
+            )}
+
+            <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] text-xs text-gray-500">
+              <span>创建于 {new Date(detail.createdAt).toLocaleDateString()}</span>
+              <button
+                className="text-cyan-400 hover:text-cyan-300"
+                onClick={() => { setDetail(null); router.push(`/agents/${detail.id}/edit`) }}
+              >
+                编辑
+              </button>
             </div>
           </div>
         )}
-      </Drawer>
+      </Modal>
     </div>
   )
 }

@@ -1,7 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken, COOKIE_NAME } from '@/lib/auth'
+import { verifyTokenWithUser, COOKIE_NAME } from '@/lib/auth'
 import JSZip from 'jszip'
+import fs from 'fs'
+import path from 'path'
 
 async function resolveTagIds(tagNames: string[]) {
   const result = []
@@ -16,7 +18,7 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   const token = req.cookies.get(COOKIE_NAME)?.value
-  const payload = token ? await verifyToken(token) : null
+  const payload = token ? await verifyTokenWithUser(token) : null
   if (!payload) return NextResponse.json({ error: '未登录' }, { status: 401 })
 
   const formData = await req.formData()
@@ -45,6 +47,8 @@ export async function POST(req: NextRequest) {
     let skillMdContent = ''
     const references: any[] = []
     const scripts: any[] = []
+    const assets: any[] = []
+    const assetFiles: { filename: string; buffer: Buffer }[] = []
 
     for (const [filePath, zipEntry] of Object.entries(zip.files)) {
       if (zipEntry.dir) continue
@@ -60,6 +64,9 @@ export async function POST(req: NextRequest) {
         const ext = name.split('.').pop() || 'sh'
         const langMap: Record<string, string> = { sh: 'sh', py: 'py', js: 'js', ts: 'ts' }
         scripts.push({ filename: name, language: langMap[ext] || 'sh', content: await zipEntry.async('string') })
+      } else if (parent === 'assets') {
+        const buf = Buffer.from(await zipEntry.async('arraybuffer'))
+        assetFiles.push({ filename: name, buffer: buf })
       }
     }
 
@@ -68,11 +75,22 @@ export async function POST(req: NextRequest) {
     }
 
     const { tags, ...parsed } = parseSkillMd(skillMdContent)
+
+    if (assetFiles.length > 0) {
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'skills', parsed.name)
+      fs.mkdirSync(uploadDir, { recursive: true })
+      for (const af of assetFiles) {
+        fs.writeFileSync(path.join(uploadDir, af.filename), af.buffer)
+        assets.push({ filename: af.filename, storedPath: `/uploads/skills/${parsed.name}/${af.filename}` })
+      }
+    }
+
     const skill = await prisma.skill.create({
       data: {
         ...parsed,
         references: references.length > 0 ? references : undefined,
         scripts: scripts.length > 0 ? scripts : undefined,
+        assets: assets.length > 0 ? assets : undefined,
         userId: payload.userId,
         tags: tags.length ? { create: await resolveTagIds(tags) } : undefined,
       },
@@ -95,7 +113,7 @@ function parseSkillMd(text: string) {
     const frontmatter = fmMatch[1]
     content = fmMatch[2].trim()
     const nameMatch = frontmatter.match(/^name:\s*(.+)$/m)
-    const descMatch = frontmatter.match(/^description:\s*([\s\S]+?)(?=\n\w|\n$|$)/m)
+    const descMatch = frontmatter.match(/^description:\s*(.+)$/m)
     const authorMatch = frontmatter.match(/^author:\s*(.+)$/m)
     const tagsMatch = frontmatter.match(/^tags:\s*(.+)$/m)
     if (nameMatch) name = nameMatch[1].trim()

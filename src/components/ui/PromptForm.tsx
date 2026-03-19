@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { Input, Select, Button, message, TreeSelect, Switch, Table, InputNumber } from 'antd'
 import { useRouter } from 'next/navigation'
 import type { Dimension, Tag, PromptVariable } from '@/store/prompt'
@@ -46,7 +46,7 @@ export default function PromptForm({ initialData, isEdit }: Props) {
     fetch('/api/categories').then(r => r.json()).then(setDimensions)
     fetch('/api/tags').then(r => r.json()).then((data: Tag[]) => {
       setTags(data)
-      setTagOptions(data.map(t => ({ label: t.name, value: t.id })))
+      setTagOptions(data.map(t => ({ label: t.name, value: String(t.id) })))
     })
   }, [])
 
@@ -58,7 +58,7 @@ export default function PromptForm({ initialData, isEdit }: Props) {
         description: initialData.description || '',
         author: initialData.author || '',
         categoryIds: initialData.categoryIds,
-        tagIds: initialData.tagIds,
+        tagIds: initialData.tagIds.map(String),
         variables: initialData.variables || [],
         visibility: (initialData as any).visibility || 'PUBLIC',
         department: (initialData as any).department || '',
@@ -66,24 +66,22 @@ export default function PromptForm({ initialData, isEdit }: Props) {
     }
   }, [initialData])
 
-  const detectedVars = useMemo(() => {
-    const matches = form.content.match(/\{\{(\w+)\}\}/g) || []
-    return Array.from(new Set(matches.map(m => m.slice(2, -2))))
-  }, [form.content])
-
   useEffect(() => {
-    if (detectedVars.length === 0) {
-      if (form.variables.length > 0) set('variables', [])
-      return
-    }
-    const updated = detectedVars.map(name => {
-      const existing = form.variables.find(v => v.name === name)
-      return existing || { name, label: name, type: 'text' as const, defaultValue: '', required: false }
+    setForm(prev => {
+      const matches = prev.content.match(/\{\{(\w+)\}\}/g) || []
+      const names = Array.from(new Set(matches.map(m => m.slice(2, -2))))
+      if (names.length === 0) {
+        return prev.variables.length > 0 ? { ...prev, variables: [] } : prev
+      }
+      const updated = names.map(name => {
+        const existing = prev.variables.find(v => v.name === name)
+        return existing || { name, label: name, type: 'text' as const, defaultValue: '', required: false }
+      })
+      const changed = updated.length !== prev.variables.length ||
+        updated.some((v, i) => v.name !== prev.variables[i]?.name)
+      return changed ? { ...prev, variables: updated } : prev
     })
-    const changed = updated.length !== form.variables.length ||
-      updated.some((v, i) => v.name !== form.variables[i]?.name)
-    if (changed) set('variables', updated)
-  }, [detectedVars])
+  }, [form.content])
 
   const treeData = dimensions.map((dim) => ({
     title: dim.name,
@@ -109,8 +107,8 @@ export default function PromptForm({ initialData, isEdit }: Props) {
 
     const resolvedTagIds: number[] = []
     for (const val of form.tagIds) {
-      if (typeof val === 'number') {
-        resolvedTagIds.push(val)
+      if (typeof val === 'number' || (typeof val === 'string' && /^\d+$/.test(val as string))) {
+        resolvedTagIds.push(Number(val))
       } else {
         const existing = tags.find(t => t.name === val)
         if (existing) {
@@ -121,10 +119,15 @@ export default function PromptForm({ initialData, isEdit }: Props) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: val }),
           })
+          if (!res.ok) {
+            message.error(`创建标签"${val}"失败`)
+            setSubmitting(false)
+            return
+          }
           const newTag = await res.json()
           resolvedTagIds.push(newTag.id)
           setTags(prev => [...prev, newTag])
-          setTagOptions(prev => [...prev, { label: newTag.name, value: newTag.id }])
+          setTagOptions(prev => [...prev, { label: newTag.name, value: String(newTag.id) }])
         }
       }
     }
@@ -141,7 +144,8 @@ export default function PromptForm({ initialData, isEdit }: Props) {
       message.success(isEdit ? '更新成功' : '创建成功')
       router.push('/prompts')
     } else {
-      message.error('操作失败')
+      const err = await res.json().catch(() => ({}))
+      message.error(err.error || `操作失败 (${res.status})`)
     }
   }
 
@@ -203,16 +207,46 @@ export default function PromptForm({ initialData, isEdit }: Props) {
         </div>
       </div>
 
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <label className="text-sm text-gray-400">
+            模板变量
+            {form.variables.length > 0 && <span className="ml-1 text-gray-500">(在内容中使用 {'{{变量名}}'} 可自动检测)</span>}
+          </label>
+          <Button
+            size="small"
+            onClick={() => {
+              const name = `var${form.variables.length + 1}`
+              set('variables', [...form.variables, { name, label: name, type: 'text' as const, defaultValue: '', required: false }])
+            }}
+          >
+            + 添加变量
+          </Button>
+        </div>
+      </div>
+
       {form.variables.length > 0 && (
         <div>
-          <label className="block text-sm text-gray-400 mb-1">模板变量 (检测到 {'{{变量名}}'} 格式)</label>
           <Table
             dataSource={form.variables}
             rowKey="name"
             pagination={false}
             size="small"
             columns={[
-              { title: '变量名', dataIndex: 'name', width: 100 },
+              {
+                title: '变量名', dataIndex: 'name', width: 110,
+                render: (_: any, record: PromptVariable, idx: number) => (
+                  <Input
+                    size="small"
+                    value={record.name}
+                    onChange={e => {
+                      const vars = [...form.variables]
+                      vars[idx] = { ...vars[idx], name: e.target.value }
+                      set('variables', vars)
+                    }}
+                  />
+                ),
+              },
               {
                 title: '类型', dataIndex: 'type', width: 90,
                 render: (_: any, record: PromptVariable, idx: number) => (
@@ -293,6 +327,17 @@ export default function PromptForm({ initialData, isEdit }: Props) {
                       set('variables', vars)
                     }}
                   />
+                ),
+              },
+              {
+                title: '', dataIndex: 'action', width: 40, align: 'center' as const,
+                render: (_: any, __: any, idx: number) => (
+                  <Button
+                    size="small"
+                    type="text"
+                    danger
+                    onClick={() => set('variables', form.variables.filter((_, i) => i !== idx))}
+                  >×</Button>
                 ),
               },
             ]}

@@ -1,4 +1,5 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { verifyToken, COOKIE_NAME } from '@/lib/auth'
 
 const GENERATE_SYSTEM = `你是一个专业的 Prompt 工程师。用户会描述他们需要的 Prompt 功能，你需要生成一个高质量的提示词。
 
@@ -33,6 +34,10 @@ export async function POST(req: NextRequest) {
   if (!checkRate(ip)) {
     return new Response(JSON.stringify({ error: '请求过于频繁，请稍后再试' }), { status: 429 })
   }
+
+  const token = req.cookies.get(COOKIE_NAME)?.value
+  const payload = token ? await verifyToken(token) : null
+  if (!payload) return NextResponse.json({ error: '未登录' }, { status: 401 })
 
   const { description, style } = await req.json()
   if (!description || typeof description !== 'string' || description.length > 2000) {

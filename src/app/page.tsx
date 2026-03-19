@@ -10,6 +10,7 @@ const AGENT_COUNT = AGENTS.length
 
 interface QuickStats {
   totalPrompts: number
+  totalSkills: number
   totalCopies: number
   totalCategories: number
   totalTags: number
@@ -19,6 +20,7 @@ interface QuickStats {
 
 const features = [
   { icon: '📝', title: 'Prompt 模板库', desc: '结构化管理团队 Prompt 资产，按维度分类检索', href: '/prompts' },
+  { icon: '⚡', title: 'Skill 库', desc: '将 Prompt 封装为 Claude Code Skill，一键安装使用', href: '/skills' },
   { icon: '📊', title: '数据看板', desc: '实时统计使用数据，量化 AI 辅助效果', href: '/dashboard' },
   { icon: '📖', title: 'AI 入门指南', desc: '全员必读，从认知统一到进阶技巧', href: '/guide' },
   { icon: '🏷️', title: '分类管理', desc: '多维度 + 树形分类，灵活组织知识体系', href: '/categories' },
@@ -35,7 +37,7 @@ export default function Home() {
     <div className="-mt-4">
       <section className="relative flex flex-col items-center justify-center min-h-[50vh] text-center overflow-hidden">
         <NeuralNetworkBg />
-        <div className="animate-fadeIn relative z-10">
+        <div className="animate-fadeIn relative z-10 mt-16">
           <div className="flex justify-center mb-5">
             <span className="inline-flex items-center justify-center w-16 h-16 rounded-2xl text-3xl"
               style={{ background: 'linear-gradient(135deg, rgba(0,255,255,0.15), rgba(0,128,255,0.1))', border: '1px solid rgba(0,255,255,0.2)', boxShadow: '0 0 30px rgba(0,255,255,0.1)' }}>
@@ -53,9 +55,10 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 md:grid-cols-5 gap-4 mt-16 w-full max-w-4xl animate-slideUp relative z-10">
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mt-16 w-full max-w-5xl animate-slideUp relative z-10">
           {[
             { label: 'Prompt 总数', value: stats?.totalPrompts ?? '—', color: '#00ffff', href: '/prompts' },
+            { label: 'Skill 数', value: stats?.totalSkills ?? '—', color: '#FFA727', href: '/skills' },
             { label: '使用次数', value: stats?.totalCopies ?? '—', color: '#bf00ff', href: '/dashboard' },
             { label: '分类数', value: stats?.totalCategories ?? '—', color: '#0080ff', href: '/categories' },
             { label: '标签数', value: stats?.totalTags ?? '—', color: '#ff6b6b', href: '/prompts' },

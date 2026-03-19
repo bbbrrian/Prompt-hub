@@ -1,0 +1,9 @@
+.env
+.env.*
+node_modules
+.git
+*.backup.*
+*.backup
+TODO.md
+*.docx
+prisma/seed.backup.ts

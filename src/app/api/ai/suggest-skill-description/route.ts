@@ -1,4 +1,5 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { verifyToken, COOKIE_NAME } from '@/lib/auth'
 
 const SYSTEM = `你是一个 Claude Code Skill 描述生成专家。根据用户提供的 Prompt 内容，生成一段简短的 Skill 触发条件描述（1-2句话）。
 这段描述会作为 Skill 的 description 字段，用于告诉 Claude Code 什么时候应该触发这个 Skill。
@@ -23,6 +24,10 @@ export async function POST(req: NextRequest) {
   if (!checkRate(ip)) {
     return new Response(JSON.stringify({ error: '请求过于频繁，请稍后再试' }), { status: 429 })
   }
+
+  const token = req.cookies.get(COOKIE_NAME)?.value
+  const payload = token ? await verifyToken(token) : null
+  if (!payload) return NextResponse.json({ error: '未登录' }, { status: 401 })
 
   const { content, title } = await req.json()
   if (!content || typeof content !== 'string' || content.length > 10000) {

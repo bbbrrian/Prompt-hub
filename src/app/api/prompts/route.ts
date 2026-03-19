@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken, COOKIE_NAME } from '@/lib/auth'
+import { verifyToken, verifyTokenWithUser, COOKIE_NAME } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const token = req.cookies.get(COOKIE_NAME)?.value
-  const payload = token ? await verifyToken(token) : null
+  const payload = token ? await verifyTokenWithUser(token) : null
   if (!payload) return NextResponse.json({ error: '未登录' }, { status: 401 })
 
   const body = await req.json()
@@ -72,28 +72,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'content 不合法' }, { status: 400 })
   }
 
-  const prompt = await prisma.prompt.create({
-    data: {
-      title,
-      content,
-      description,
-      author,
-      userId: payload?.userId ?? undefined,
-      variables: variables || undefined,
-      visibility: visibility || undefined,
-      department: department || undefined,
-      categories: categoryIds?.length
-        ? { create: categoryIds.map((id: number) => ({ categoryId: id })) }
-        : undefined,
-      tags: tagIds?.length
-        ? { create: tagIds.map((id: number) => ({ tagId: id })) }
-        : undefined,
-    },
-    include: {
-      categories: { include: { category: true } },
-      tags: { include: { tag: true } },
-    },
-  })
-
-  return NextResponse.json(prompt, { status: 201 })
+  try {
+    const prompt = await prisma.prompt.create({
+      data: {
+        title,
+        content,
+        description,
+        author,
+        userId: payload?.userId ?? undefined,
+        variables: variables || undefined,
+        visibility: visibility || undefined,
+        department: department || undefined,
+        categories: categoryIds?.length
+          ? { create: categoryIds.map((id: number) => ({ categoryId: id })) }
+          : undefined,
+        tags: tagIds?.length
+          ? { create: tagIds.map((id: number) => ({ tagId: id })) }
+          : undefined,
+      },
+      include: {
+        categories: { include: { category: true } },
+        tags: { include: { tag: true } },
+      },
+    })
+    return NextResponse.json(prompt, { status: 201 })
+  } catch (e: any) {
+    console.error('POST /api/prompts error:', e)
+    return NextResponse.json({ error: e?.message || '数据库错误' }, { status: 500 })
+  }
 }

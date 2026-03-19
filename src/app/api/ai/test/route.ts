@@ -1,6 +1,11 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { verifyToken, COOKIE_NAME } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
+  const token = req.cookies.get(COOKIE_NAME)?.value
+  const payload = token ? await verifyToken(token) : null
+  if (!payload || payload.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
   const apiKey = process.env.AI_API_KEY || ''
   const baseUrl = process.env.AI_BASE_URL || 'https://api.openai.com'
   const model = process.env.AI_MODEL || 'gpt-4o'

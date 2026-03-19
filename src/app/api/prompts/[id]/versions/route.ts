@@ -12,7 +12,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const id = Number(params.id)
   const prompt = await prisma.prompt.findUnique({ where: { id } })
   if (!prompt) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (prompt.userId !== payload.userId && payload.role !== 'ADMIN' && prompt.visibility !== 'PUBLIC') {
+  if (prompt.userId !== payload.userId && payload.role !== 'admin' && prompt.visibility !== 'PUBLIC') {
     return NextResponse.json({ error: '无权限' }, { status: 403 })
   }
 

@@ -1,4 +1,5 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { verifyToken, COOKIE_NAME } from '@/lib/auth'
 
 const OPTIMIZE_SYSTEM = `你是一个专业的 Prompt 优化专家。用户会提供一个现有的提示词，你需要对其进行优化，使其更加清晰、专业和有效。
 
@@ -34,6 +35,10 @@ export async function POST(req: NextRequest) {
   if (!checkRate(ip)) {
     return new Response(JSON.stringify({ error: '请求过于频繁，请稍后再试' }), { status: 429 })
   }
+
+  const token = req.cookies.get(COOKIE_NAME)?.value
+  const payload = token ? await verifyToken(token) : null
+  if (!payload) return NextResponse.json({ error: '未登录' }, { status: 401 })
 
   const { title, content, description } = await req.json()
   if (!title || typeof title !== 'string' || title.length > 200) {

@@ -3,10 +3,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import JSZip from 'jszip'
 import fs from 'fs'
 import path from 'path'
+import { verifyToken, COOKIE_NAME } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const token = req.cookies.get(COOKIE_NAME)?.value
+  const payload = token ? await verifyToken(token) : null
+  if (!payload) return NextResponse.json({ error: '未登录' }, { status: 401 })
+
   const skill = await prisma.skill.findUnique({
     where: { id: Number(params.id), isDeleted: false },
     include: { tags: { include: { tag: true } } },
@@ -45,6 +50,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   if (assets?.length) {
     const assetFolder = folder.folder('assets')!
     for (const a of assets) {
+      if (!a.storedPath || !a.storedPath.startsWith('/uploads/')) continue
       const filePath = path.join(process.cwd(), 'public', a.storedPath)
       if (fs.existsSync(filePath)) {
         assetFolder.file(a.filename, fs.readFileSync(filePath))

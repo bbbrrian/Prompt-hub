@@ -76,12 +76,16 @@ export default function PromptsPage() {
     fetchPrompts()
     fetchDimensions()
     fetchTags()
-  }, [fetchPrompts, fetchDimensions, fetchTags])
+  }, [])
 
   const handleExport = (format: 'json' | 'markdown') => {
     const params = new URLSearchParams({ format })
-    if (categoryId) params.set('categoryId', String(categoryId))
-    if (tagId) params.set('tagId', String(tagId))
+    if (selectedIds.length > 0) {
+      params.set('ids', selectedIds.join(','))
+    } else {
+      if (categoryId) params.set('categoryId', String(categoryId))
+      if (tagId) params.set('tagId', String(tagId))
+    }
     window.open(`/api/prompts/export?${params}`, '_blank')
   }
 

@@ -24,10 +24,9 @@ export async function GET(req: NextRequest) {
   }
 
   const [items, total] = await Promise.all([
-    prisma.skill.findMany({
+    prisma.agent.findMany({
       where,
       include: {
-        prompt: { select: { id: true, title: true } },
         user: { select: { id: true, email: true } },
         tags: { include: { tag: true } },
       },
@@ -35,7 +34,7 @@ export async function GET(req: NextRequest) {
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    prisma.skill.count({ where }),
+    prisma.agent.count({ where }),
   ])
 
   return NextResponse.json({ items, total, page, pageSize })
@@ -46,38 +45,39 @@ export async function POST(req: NextRequest) {
   const payload = token ? await verifyTokenWithUser(token) : null
   if (!payload) return NextResponse.json({ error: '未登录' }, { status: 401 })
 
-  const body = await req.json()
-  const { name, description, content, references, scripts, assets, promptId, author, tags } = body
+  try {
+    const body = await req.json()
+    const { name, description, systemPrompt, tools, model, author, tags } = body
 
-  if (!name || typeof name !== 'string' || name.length > 200) {
-    return NextResponse.json({ error: 'name 不合法' }, { status: 400 })
+    if (!name || typeof name !== 'string' || name.length > 200) {
+      return NextResponse.json({ error: 'name 不合法' }, { status: 400 })
+    }
+    if (!systemPrompt || typeof systemPrompt !== 'string') {
+      return NextResponse.json({ error: 'systemPrompt 不合法' }, { status: 400 })
+    }
+
+    const agent = await prisma.agent.create({
+      data: {
+        name,
+        description: description || '',
+        systemPrompt,
+        tools: tools || undefined,
+        model: model || undefined,
+        author: author || undefined,
+        userId: payload.userId,
+        tags: tags?.length ? {
+          create: await resolveTagIds(tags),
+        } : undefined,
+      },
+      include: {
+        tags: { include: { tag: true } },
+      },
+    })
+
+    return NextResponse.json(agent, { status: 201 })
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message || '数据库错误' }, { status: 500 })
   }
-  if (!content || typeof content !== 'string' || content.length > 100000) {
-    return NextResponse.json({ error: 'content 不合法' }, { status: 400 })
-  }
-
-  const skill = await prisma.skill.create({
-    data: {
-      name,
-      description: description || '',
-      content,
-      references: references || undefined,
-      scripts: scripts || undefined,
-      assets: assets || undefined,
-      author: author || undefined,
-      promptId: promptId || undefined,
-      userId: payload?.userId ?? undefined,
-      tags: tags?.length ? {
-        create: await resolveTagIds(tags),
-      } : undefined,
-    },
-    include: {
-      prompt: { select: { id: true, title: true } },
-      tags: { include: { tag: true } },
-    },
-  })
-
-  return NextResponse.json(skill, { status: 201 })
 }
 
 async function resolveTagIds(tagNames: string[]) {

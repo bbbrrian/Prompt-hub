@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Input, Pagination, message, Popconfirm, Upload, Empty, Spin, Dropdown, Modal, Tag, Select } from 'antd'
 import { SearchOutlined, DownloadOutlined, EditOutlined, DeleteOutlined, UploadOutlined, PlusOutlined, FileTextOutlined, EditFilled, EyeOutlined, FileOutlined, CodeOutlined, BookOutlined } from '@ant-design/icons'
+import { useRouter } from 'next/navigation'
 
 interface SkillItem {
   id: number
@@ -25,6 +26,7 @@ interface SkillDetail extends SkillItem {
 }
 
 export default function SkillsPage() {
+  const router = useRouter()
   const [items, setItems] = useState<SkillItem[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -32,8 +34,38 @@ export default function SkillsPage() {
   const [tagFilter, setTagFilter] = useState('')
   const [allTags, setAllTags] = useState<{ value: string; label: string }[]>([])
   const [loading, setLoading] = useState(false)
+  const [importing, setImporting] = useState(false)
   const [detail, setDetail] = useState<SkillDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
+
+  const [promptModalOpen, setPromptModalOpen] = useState(false)
+  const [promptSearch, setPromptSearch] = useState('')
+  const [promptList, setPromptList] = useState<{ id: number; title: string; description: string }[]>([])
+  const [promptLoading, setPromptLoading] = useState(false)
+  const promptSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const searchPrompts = useCallback(async (q: string) => {
+    setPromptLoading(true)
+    const params = new URLSearchParams({ pageSize: '20' })
+    if (q) params.set('search', q)
+    const res = await fetch(`/api/prompts?${params}`)
+    if (res.ok) {
+      const data = await res.json()
+      setPromptList(data.items.map((p: any) => ({ id: p.id, title: p.title, description: p.description })))
+    }
+    setPromptLoading(false)
+  }, [])
+
+  useEffect(() => {
+    if (!promptModalOpen) return
+    searchPrompts('')
+  }, [promptModalOpen, searchPrompts])
+
+  const handlePromptSearchChange = (val: string) => {
+    setPromptSearch(val)
+    if (promptSearchTimer.current) clearTimeout(promptSearchTimer.current)
+    promptSearchTimer.current = setTimeout(() => searchPrompts(val), 300)
+  }
 
   useEffect(() => {
     fetch('/api/tags').then(r => r.ok ? r.json() : []).then((data: any[]) => {
@@ -79,6 +111,7 @@ export default function SkillsPage() {
   }
 
   const handleImport = async (file: File) => {
+    setImporting(true)
     const form = new FormData()
     form.append('file', file)
     const res = await fetch('/api/skills/import', { method: 'POST', body: form })
@@ -89,6 +122,7 @@ export default function SkillsPage() {
       const err = await res.json().catch(() => ({}))
       message.error(err.error || '导入失败')
     }
+    setImporting(false)
     return false
   }
 
@@ -113,9 +147,9 @@ export default function SkillsPage() {
           <a href="/skill-guide" className="neon-button !px-3 !py-1.5 !text-sm inline-flex items-center">
             <BookOutlined className="mr-1" />查看指南
           </a>
-          <Upload beforeUpload={handleImport as any} showUploadList={false} accept=".zip,.md">
-            <button className="neon-button !px-3 !py-1.5 !text-sm">
-              <UploadOutlined className="mr-1" />导入
+          <Upload beforeUpload={handleImport as any} showUploadList={false} accept=".zip,.md" disabled={importing}>
+            <button className="neon-button !px-3 !py-1.5 !text-sm" disabled={importing}>
+              <UploadOutlined className="mr-1" />{importing ? '导入中...' : '导入'}
             </button>
           </Upload>
           <Dropdown
@@ -129,7 +163,7 @@ export default function SkillsPage() {
                 {
                   key: 'from-prompt',
                   icon: <FileTextOutlined />,
-                  label: <a href="/prompts">从 Prompt 创建</a>,
+                  label: <span onClick={() => setPromptModalOpen(true)}>从 Prompt 创建</span>,
                 },
               ],
             }}
@@ -233,6 +267,43 @@ export default function SkillsPage() {
           <Pagination current={page} total={total} pageSize={12} onChange={setPage} showSizeChanger={false} />
         </div>
       )}
+
+      <Modal
+        open={promptModalOpen}
+        onCancel={() => { setPromptModalOpen(false); setPromptSearch(''); setPromptList([]) }}
+        footer={null}
+        title="选择 Prompt"
+        width={600}
+      >
+        <Input
+          placeholder="搜索 Prompt..."
+          prefix={<SearchOutlined />}
+          value={promptSearch}
+          onChange={e => handlePromptSearchChange(e.target.value)}
+          allowClear
+          className="mb-3"
+        />
+        <Spin spinning={promptLoading}>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {promptList.length === 0 && !promptLoading && (
+              <Empty description="暂无结果" className="py-8" />
+            )}
+            {promptList.map(p => (
+              <div
+                key={p.id}
+                className="p-3 rounded-lg border border-white/10 cursor-pointer hover:border-cyan-500/40 hover:bg-white/5 transition-colors"
+                onClick={() => {
+                  setPromptModalOpen(false)
+                  router.push(`/skills/new?promptId=${p.id}`)
+                }}
+              >
+                <div className="text-sm font-medium text-gray-100">{p.title}</div>
+                {p.description && <div className="text-xs text-gray-400 mt-0.5 line-clamp-1">{p.description}</div>}
+              </div>
+            ))}
+          </div>
+        </Spin>
+      </Modal>
 
       <Modal
         open={!!detail || detailLoading}

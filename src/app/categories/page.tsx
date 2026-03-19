@@ -1,9 +1,15 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Button, Input, Modal, Tree, message, Popconfirm, Empty, Spin } from 'antd'
+import { Button, Input, Modal, Tree, message, Popconfirm, Empty, Spin, Tag } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import type { Dimension, Category } from '@/store/prompt'
+
+interface TagItem {
+  id: number
+  name: string
+  color: string
+}
 
 interface EditingItem {
   type: 'dimension' | 'category'
@@ -20,11 +26,19 @@ export default function CategoriesPage() {
   const [editing, setEditing] = useState<EditingItem | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  const [tags, setTags] = useState<TagItem[]>([])
+  const [tagModalOpen, setTagModalOpen] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
+  const [tagSubmitting, setTagSubmitting] = useState(false)
+
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const res = await fetch('/api/categories')
-    const data = await res.json()
-    setDimensions(data)
+    const [catRes, tagRes] = await Promise.all([
+      fetch('/api/categories'),
+      fetch('/api/tags'),
+    ])
+    setDimensions(await catRes.json())
+    setTags(await tagRes.json())
     setLoading(false)
   }, [])
 
@@ -57,6 +71,37 @@ export default function CategoriesPage() {
     await fetch(`/api/categories?type=${type}&id=${id}`, { method: 'DELETE' })
     message.success('已删除')
     fetchData()
+  }
+
+  const handleAddTag = async () => {
+    if (!newTagName.trim()) { message.error('标签名不能为空'); return }
+    setTagSubmitting(true)
+    const res = await fetch('/api/tags', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newTagName.trim() }),
+    })
+    setTagSubmitting(false)
+    if (res.ok) {
+      message.success('标签已创建')
+      setNewTagName('')
+      setTagModalOpen(false)
+      fetchData()
+    } else {
+      const err = await res.json().catch(() => ({}))
+      message.error(err.error || '创建失败')
+    }
+  }
+
+  const handleDeleteTag = async (id: number) => {
+    const res = await fetch(`/api/tags?id=${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      message.success('已删除')
+      fetchData()
+    } else {
+      const err = await res.json().catch(() => ({}))
+      message.error(err.error || '删除失败')
+    }
   }
 
   const openAdd = (type: 'dimension' | 'category', dimensionId?: number, parentId?: number | null) => {
@@ -157,6 +202,27 @@ export default function CategoriesPage() {
         </div>
       )}
 
+      <div className="glass-card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-100">标签管理</h3>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setTagModalOpen(true)}>新建标签</Button>
+        </div>
+        {tags.length === 0 ? (
+          <p className="text-sm text-gray-500">暂无标签</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {tags.map(tag => (
+              <div key={tag.id} className="flex items-center gap-1">
+                <Tag color={tag.color}>{tag.name}</Tag>
+                <Popconfirm title="确认删除此标签？" onConfirm={() => handleDeleteTag(tag.id)}>
+                  <Button type="text" size="small" danger icon={<DeleteOutlined />} className="!p-0.5" />
+                </Popconfirm>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <Modal
         open={modalOpen}
         title={editing?.id ? `编辑${editing.type === 'dimension' ? '维度' : '分类'}` : `新建${editing?.type === 'dimension' ? '维度' : '分类'}`}
@@ -170,6 +236,22 @@ export default function CategoriesPage() {
           placeholder="输入名称"
           className="mt-4"
           onPressEnter={handleSave}
+        />
+      </Modal>
+
+      <Modal
+        open={tagModalOpen}
+        title="新建标签"
+        onCancel={() => { setTagModalOpen(false); setNewTagName('') }}
+        onOk={handleAddTag}
+        confirmLoading={tagSubmitting}
+      >
+        <Input
+          value={newTagName}
+          onChange={e => setNewTagName(e.target.value)}
+          placeholder="输入标签名称"
+          className="mt-4"
+          onPressEnter={handleAddTag}
         />
       </Modal>
     </div>

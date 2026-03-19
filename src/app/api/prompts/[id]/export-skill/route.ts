@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import JSZip from 'jszip'
+import { verifyToken, COOKIE_NAME } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +15,10 @@ function toSkillName(title: string) {
 }
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const token = req.cookies.get(COOKIE_NAME)?.value
+  const payload = token ? await verifyToken(token) : null
+  if (!payload) return NextResponse.json({ error: '未登录' }, { status: 401 })
+
   const prompt = await prisma.prompt.findUnique({
     where: { id: Number(params.id), isDeleted: false },
     include: {
@@ -23,6 +28,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   })
 
   if (!prompt) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  if (prompt.visibility !== 'PUBLIC' && prompt.userId !== payload.userId && payload.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const skillName = toSkillName(prompt.title)
   const cats = prompt.categories.map(c => `${c.category.dimension?.name}/${c.category.name}`).join(', ')

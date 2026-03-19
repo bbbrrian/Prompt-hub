@@ -41,6 +41,7 @@ model Tag {
   createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz()
   prompts   PromptTag[]
   skills    SkillTag[]
+  agents    AgentTag[]
 
   @@map("tag")
 }
@@ -150,6 +151,7 @@ model User {
   prompts      Prompt[]
   workflows    Workflow[]
   skills       Skill[]
+  agents       Agent[]
 
   @@map("user")
 }
@@ -199,4 +201,36 @@ model SkillTag {
 
   @@id([skillId, tagId])
   @@map("skill_tag")
+}
+
+// 注意：修改此文件后需执行 npx prisma migrate dev --name add-agent 生成迁移
+
+model Agent {
+  id            Int        @id @default(autoincrement())
+  name          String     @db.VarChar(200)
+  description   String     @db.Text
+  systemPrompt  String     @db.Text @map("system_prompt")
+  tools         Json?
+  model         String?    @db.VarChar(100)
+  author        String?    @db.VarChar(100)
+  userId        Int?       @map("user_id")
+  version       Int        @default(1)
+  isDeleted     Boolean    @default(false) @map("is_deleted")
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz()
+  user          User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tags          AgentTag[]
+
+  @@index([createdAt(sort: Desc)])
+  @@map("agent")
+}
+
+model AgentTag {
+  agentId Int   @map("agent_id")
+  tagId   Int   @map("tag_id")
+  agent   Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  tag     Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([agentId, tagId])
+  @@map("agent_tag")
 }

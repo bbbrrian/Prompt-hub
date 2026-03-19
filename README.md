@@ -91,8 +91,10 @@ npm run dev
 - **最近 30 天新增趋势折线图**
 
 ### Agent 库
-- 147+ 预置 Agent 模板（`/agents`）
-- 按类型/场景搜索过滤
+- 156 个预置 Agent（工程、设计、营销、销售等 12 个分类），数据持久化至 PostgreSQL
+- 支持新建、编辑、删除 Agent
+- 按分类标签筛选，默认显示工程类
+- 点击卡片查看完整 System Prompt
 
 ### 收藏夹
 - Prompt 一键收藏/取消收藏
@@ -143,6 +145,14 @@ src/
 ```
 
 ## 迭代记录
+
+### v1.8（2026-03）
+- **Agent 库重构**：156 个预置 Agent 迁移至 PostgreSQL，支持 CRUD，按分类标签筛选（12个分类），默认显示工程类
+- **Bug 修复**：
+  - 提示词库导出/导入现在遵循选中卡片，而非全局过滤
+  - 修复标签删除失效（AntD `mode="tags"` 数字值类型不一致问题）
+  - Skill 导入新增 loading 状态、assets 文件正确还原、description 正则修复
+- **备份脚本**：`backup.bat` 一键备份源码 + 数据库快照
 
 ### v1.7（2026-03）
 - **Skill Builder**：可视化编辑器，支持 name/description/references/scripts/assets 编辑，AI 辅助生成触发描述，客户端 jszip 打包下载

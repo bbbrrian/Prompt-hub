@@ -5,6 +5,9 @@ import { verifyToken, COOKIE_NAME } from '@/lib/auth'
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const token = req.cookies.get(COOKIE_NAME)?.value
+  const payload = token ? await verifyToken(token) : null
+
   const prompt = await prisma.prompt.findUnique({
     where: { id: Number(params.id), isDeleted: false },
     include: {
@@ -14,6 +17,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   })
 
   if (!prompt) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  if (prompt.visibility !== 'PUBLIC' && prompt.userId !== payload?.userId && payload?.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   return NextResponse.json(prompt)
 }
 

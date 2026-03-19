@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   if (!ids?.length) return NextResponse.json({ error: 'ids required' }, { status: 400 })
 
   // 所有权校验：非 admin 只能操作自己的 prompt
-  if (payload.role !== 'admin' && action !== 'export-skill') {
+  if (payload.role !== 'admin') {
     const owned = await prisma.prompt.findMany({
       where: { id: { in: ids }, userId: payload.userId },
       select: { id: true },

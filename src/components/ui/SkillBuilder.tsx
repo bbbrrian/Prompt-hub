@@ -236,7 +236,7 @@ export default function SkillBuilder({ prompt, skillId }: Props) {
         return null
       }
       const d = await r.json()
-      return { filename: d.filename, storedPath: d.storedPath }
+      return { filename: a.name, storedPath: d.storedPath }
     }))
 
     const payload: any = {
