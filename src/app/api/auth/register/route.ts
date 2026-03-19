@@ -3,7 +3,19 @@ import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { signToken, COOKIE_NAME } from '@/lib/auth'
 
+const rateMap = new Map<string, { count: number; resetAt: number }>()
+function checkRate(ip: string) {
+  const now = Date.now()
+  const entry = rateMap.get(ip)
+  if (!entry || now > entry.resetAt) { rateMap.set(ip, { count: 1, resetAt: now + 60_000 }); return true }
+  if (entry.count >= 5) return false
+  entry.count++; return true
+}
+
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? 'unknown'
+  if (!checkRate(ip)) return NextResponse.json({ error: '请求过于频繁，请稍后再试' }, { status: 429 })
+
   const body = await req.json()
   const { email, password } = body
 

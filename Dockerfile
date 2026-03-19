@@ -9,7 +9,8 @@ COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci
 
 COPY . .
-RUN npx prisma generate && npm run build
+RUN npx prisma generate && npm run build && \
+    node -e "const fs=require('fs');const raw=fs.readFileSync('src/data/agents.ts','utf-8');const m=raw.match(/export const AGENTS[^=]*=\s*(\[[\s\S]*\])\s*\$/);fs.writeFileSync('scripts/agents.json',m[1])"
 
 # ---- 运行阶段 ----
 FROM node:20-alpine AS runner
@@ -24,8 +25,7 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY prisma ./prisma
-COPY scripts ./scripts
-COPY src/data ./src/data
+COPY --from=builder /app/scripts ./scripts
 COPY public ./public
 
 EXPOSE 3000
