@@ -12,23 +12,29 @@
 
 ## 快速启动
 
-```bash
-# 配置数据库
-cp .env.example .env
-# 修改 .env 中的 DATABASE_URL
+> 需要 Node.js 20+ 和 Docker
 
-# 安装依赖
+```bash
+# 1. 复制环境变量（默认配置即可本地运行）
+cp .env.example .env
+
+# 2. 启动数据库
+docker compose up -d db
+
+# 3. 安装依赖（自动执行 prisma generate）
 npm install
 
-# 初始化数据库
+# 4. 初始化数据库结构 + 种子数据（含 156 个 Agent）
 npm run db:push
 npm run db:seed
 
-# 启动开发服务器
+# 5. 启动开发服务器
 npm run dev
 ```
 
 访问 http://localhost:3000
+
+> **生产部署**：`docker compose up -d --build` 一键启动所有服务
 
 ## 环境变量
 
