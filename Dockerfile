@@ -8,4 +8,4 @@ RUN npx prisma generate
 RUN npm run build
 
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node scripts/seed-agents.mjs && npm start"]
