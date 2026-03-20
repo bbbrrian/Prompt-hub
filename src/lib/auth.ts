@@ -24,14 +24,4 @@ export async function verifyToken(token: string) {
   }
 }
 
-export async function verifyTokenWithUser(token: string) {
-  const payload = await verifyToken(token)
-  if (!payload) return null
-  const { prisma } = await import('@/lib/prisma')
-  const user = await prisma.user.findUnique({ where: { id: payload.userId } })
-  if (!user) return null
-  if (user.role !== payload.role) return null
-  return payload
-}
-
 export { COOKIE_NAME }

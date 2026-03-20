@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyTokenWithUser, COOKIE_NAME } from '@/lib/auth'
+import { COOKIE_NAME } from '@/lib/auth'
+import { verifyTokenWithUser } from '@/lib/auth-server'
 import JSZip from 'jszip'
 import fs from 'fs'
 import path from 'path'

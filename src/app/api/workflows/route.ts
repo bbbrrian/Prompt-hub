@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyTokenWithUser, COOKIE_NAME } from '@/lib/auth'
+import { COOKIE_NAME } from '@/lib/auth'
+import { verifyTokenWithUser } from '@/lib/auth-server'
 
 export const dynamic = 'force-dynamic'
 
