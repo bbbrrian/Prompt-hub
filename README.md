@@ -152,6 +152,15 @@ src/
 
 ## 迭代记录
 
+### v1.9（2026-03）
+- **全面安全审查**：修复 23 个高危 + 33 个中危问题
+  - 认证：JWT role 与数据库一致性校验、middleware 精确路径匹配、安全响应头（X-Frame-Options / X-Content-Type-Options / Referrer-Policy）
+  - API：全面输入校验（类型/长度/数量）、try-catch 防止堆栈泄露、stats 改用数据库层聚合 + 内存缓存
+  - 前端：layout 改为 Server Component 恢复 SSR/SEO、导航栏改用 next/link、登录注册跳转修复
+  - 组件：表单 try-finally 防止按钮卡死、文件上传大小/类型限制、ZIP 文件名 sanitization、YAML frontmatter 转义
+  - 构建：Docker 非 root 用户运行、Alpine openssl 修复、entrypoint 种子幂等控制、@types 版本修正
+  - 共享：提取 resolveTagIds / validateTags 到 tag-utils.ts
+
 ### v1.8（2026-03）
 - **Agent 库重构**：156 个预置 Agent 迁移至 PostgreSQL，支持 CRUD，按分类标签筛选（12个分类），默认显示工程类
 - **Bug 修复**：
