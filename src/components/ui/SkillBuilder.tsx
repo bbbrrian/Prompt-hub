@@ -109,7 +109,7 @@ export default function SkillBuilder({ prompt, skillId }: Props) {
     setScripts(prev => prev.filter(s => s.id !== id))
   }
 
-  const ALLOWED_EXTS = ['.md', '.txt', '.json', '.yaml', '.yml', '.csv', '.png', '.jpg', '.pdf']
+  const ALLOWED_EXTS = ['.md', '.txt', '.json', '.yaml', '.yml', '.csv', '.png', '.jpg', '.pdf', '.xlsx', '.xls', '.doc', '.docx']
   const MAX_FILE_SIZE = 10 * 1024 * 1024
 
   const addAsset = (file: File) => {

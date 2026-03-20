@@ -29,6 +29,7 @@ model Category {
   children    Category[]       @relation("CategoryTree")
   prompts     PromptCategory[]
 
+  @@unique([dimensionId, name], map: "category_dimension_id_name_key")
   @@index([dimensionId])
   @@index([parentId])
   @@map("category")

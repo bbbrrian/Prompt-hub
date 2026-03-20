@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   if (file.size > MAX_SIZE) return NextResponse.json({ error: '文件不能超过 10MB' }, { status: 400 })
 
   const ext = path.extname(file.name).replace(/[^.a-zA-Z0-9]/g, '').toLowerCase()
-  const ALLOWED_EXTS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.txt', '.md', '.json'])
+  const ALLOWED_EXTS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.txt', '.md', '.json', '.csv', '.yaml', '.yml', '.xlsx', '.xls', '.doc', '.docx'])
   if (!ALLOWED_EXTS.has(ext)) return NextResponse.json({ error: '不支持的文件类型' }, { status: 400 })
   const filename = `${crypto.randomUUID()}${ext}`
 

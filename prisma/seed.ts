@@ -29,13 +29,13 @@ async function main() {
     { name: '纯文本', dimIdx: 2 },
   ]
   for (const c of catData) {
-    cats[c.name] = await prisma.category.upsert({
-      where: { id: 0 },
-      update: {},
-      create: { name: c.name, dimensionId: dims[c.dimIdx].id, sortOrder: 0 },
-    }).catch(() =>
-      prisma.category.create({ data: { name: c.name, dimensionId: dims[c.dimIdx].id, sortOrder: 0 } })
-    )
+    const dimId = dims[c.dimIdx].id
+    const existing = await prisma.category.findFirst({ where: { name: c.name, dimensionId: dimId } })
+    if (existing) {
+      cats[c.name] = existing
+    } else {
+      cats[c.name] = await prisma.category.create({ data: { name: c.name, dimensionId: dimId, sortOrder: 0 } })
+    }
   }
 
   const tagData = [
