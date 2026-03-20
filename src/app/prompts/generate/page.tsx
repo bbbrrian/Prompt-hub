@@ -14,7 +14,7 @@ interface ParsedPrompt {
 
 function parseVariables(content: string): string[] {
   const matches = content.match(/\{\{(\w+)\}\}/g) || []
-  return [...new Set(matches.map(m => m.slice(2, -2)))]
+  return Array.from(new Set(matches.map(m => m.slice(2, -2))))
 }
 
 export default function GeneratePage() {
@@ -56,7 +56,13 @@ export default function GeneratePage() {
         return
       }
 
-      const reader = res.body!.getReader()
+      if (!res.body) {
+        message.error('响应体为空')
+        setLoading(false)
+        return
+      }
+
+      const reader = res.body.getReader()
       const decoder = new TextDecoder()
       let buffer = ''
       let fullText = ''
@@ -84,15 +90,30 @@ export default function GeneratePage() {
       }
 
       try {
-        const jsonMatch = fullText.match(/\{[\s\S]*\}/)
-        if (jsonMatch) {
-          const p = JSON.parse(jsonMatch[0])
-          setParsed(p)
-        } else {
-          setParseError(true)
-        }
+        const p = JSON.parse(fullText)
+        setParsed(p)
       } catch {
-        setParseError(true)
+        const codeBlockMatch = fullText.match(/```json\s*([\s\S]*?)```/)
+        if (codeBlockMatch) {
+          try {
+            const p = JSON.parse(codeBlockMatch[1].trim())
+            setParsed(p)
+          } catch {
+            setParseError(true)
+          }
+        } else {
+          const jsonMatch = fullText.match(/\{[\s\S]*\}/)
+          if (jsonMatch) {
+            try {
+              const p = JSON.parse(jsonMatch[0])
+              setParsed(p)
+            } catch {
+              setParseError(true)
+            }
+          } else {
+            setParseError(true)
+          }
+        }
       }
     } catch (e: any) {
       message.error(e.message || '网络错误')
@@ -103,8 +124,8 @@ export default function GeneratePage() {
 
   const handleSave = () => {
     if (!parsed) return
-    const prefill = encodeURIComponent(JSON.stringify(parsed))
-    router.push(`/prompts/new?prefill=${prefill}`)
+    sessionStorage.setItem('prompt-prefill', JSON.stringify(parsed))
+    router.push('/prompts/new')
   }
 
   return (

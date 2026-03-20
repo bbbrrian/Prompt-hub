@@ -83,7 +83,7 @@ export default function SkillBuilder({ prompt, skillId }: Props) {
           setAssets(data.assets.map((a: any) => ({ id: crypto.randomUUID(), name: a.filename, storedPath: a.storedPath })))
         }
       })
-  }, [])
+  }, [skillId])
 
   const addReference = () => {
     setReferences(prev => [...prev, { id: crypto.randomUUID(), name: `reference-${prev.length + 1}.md`, content: '' }])
@@ -109,7 +109,19 @@ export default function SkillBuilder({ prompt, skillId }: Props) {
     setScripts(prev => prev.filter(s => s.id !== id))
   }
 
+  const ALLOWED_EXTS = ['.md', '.txt', '.json', '.yaml', '.yml', '.csv', '.png', '.jpg', '.pdf']
+  const MAX_FILE_SIZE = 10 * 1024 * 1024
+
   const addAsset = (file: File) => {
+    const ext = '.' + file.name.split('.').pop()?.toLowerCase()
+    if (!ALLOWED_EXTS.includes(ext)) {
+      message.error(`不支持的文件类型: ${ext}`)
+      return false
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      message.error(`文件大小超过 10MB 限制`)
+      return false
+    }
     setAssets(prev => [...prev, { id: crypto.randomUUID(), name: file.name, file, storedPath: undefined }])
     return false
   }
@@ -134,7 +146,12 @@ export default function SkillBuilder({ prompt, skillId }: Props) {
         setAiLoading(false)
         return
       }
-      const reader = res.body!.getReader()
+      if (!res.body) {
+        message.error('响应体为空')
+        setAiLoading(false)
+        return
+      }
+      const reader = res.body.getReader()
       const decoder = new TextDecoder()
       let buffer = ''
       let fullText = ''
@@ -221,61 +238,68 @@ export default function SkillBuilder({ prompt, skillId }: Props) {
     if (!promptContent.trim()) { message.error('请填写 Prompt 内容'); return }
 
     setSaving(true)
-
-    // 上传本地文件（还没有 storedPath 的）
-    const uploadedAssets = await Promise.all(assets.map(async a => {
-      if (a.storedPath) return { filename: a.name, storedPath: a.storedPath }
-      if (!a.file) return null
-      const form = new FormData()
-      form.append('file', a.file)
-      if (editingSkillId) form.append('skillId', String(editingSkillId))
-      const r = await fetch('/api/skills/upload-asset', { method: 'POST', body: form })
-      if (!r.ok) {
-        const err = await r.json().catch(() => ({}))
-        message.error(`文件 ${a.name} 上传失败: ${err.error || '未知错误'}`)
-        return null
+    try {
+      const uploadedAssets: { filename: string; storedPath: string }[] = []
+      for (const a of assets) {
+        if (a.storedPath) {
+          uploadedAssets.push({ filename: a.name, storedPath: a.storedPath })
+          continue
+        }
+        if (!a.file) continue
+        const form = new FormData()
+        form.append('file', a.file)
+        if (editingSkillId) form.append('skillId', String(editingSkillId))
+        const r = await fetch('/api/skills/upload-asset', { method: 'POST', body: form })
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}))
+          message.error(`文件 ${a.name} 上传失败: ${err.error || '未知错误'}`)
+          return
+        }
+        const d = await r.json()
+        uploadedAssets.push({ filename: a.name, storedPath: d.storedPath })
       }
-      const d = await r.json()
-      return { filename: a.name, storedPath: d.storedPath }
-    }))
 
-    const payload: any = {
-      name: skillName,
-      description,
-      author,
-      tags,
-      content: promptContent,
-      references: references.map(r => ({ filename: r.name, content: r.content })),
-      scripts: scripts.map(s => {
-        const ext = s.name.split('.').pop() || 'sh'
-        const langMap: Record<string, string> = { sh: 'sh', py: 'py', js: 'js', ts: 'ts' }
-        return { filename: s.name, language: langMap[ext] || 'sh', content: s.content }
-      }),
-      assets: uploadedAssets.filter(Boolean),
-      promptId: prompt?.id ?? undefined,
-    }
-
-    const url = editingSkillId ? `/api/skills/${editingSkillId}` : '/api/skills'
-    const method = editingSkillId ? 'PUT' : 'POST'
-
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-
-    if (res.ok) {
-      const data = await res.json()
-      setEditingSkillId(data.id)
-      if (data.assets) {
-        setAssets(data.assets.map((a: any) => ({ id: crypto.randomUUID(), name: a.filename, storedPath: a.storedPath })))
+      const payload: any = {
+        name: skillName,
+        description,
+        author,
+        tags,
+        content: promptContent,
+        references: references.map(r => ({ filename: r.name, content: r.content })),
+        scripts: scripts.map(s => {
+          const ext = s.name.split('.').pop() || 'sh'
+          const langMap: Record<string, string> = { sh: 'sh', py: 'py', js: 'js', ts: 'ts' }
+          return { filename: s.name, language: langMap[ext] || 'sh', content: s.content }
+        }),
+        assets: uploadedAssets,
+        promptId: prompt?.id ?? undefined,
       }
-      message.success(editingSkillId ? '已更新' : '已保存到库')
-    } else {
-      const err = await res.json().catch(() => ({}))
-      message.error(err.error || '保存失败')
+
+      const url = editingSkillId ? `/api/skills/${editingSkillId}` : '/api/skills'
+      const method = editingSkillId ? 'PUT' : 'POST'
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setEditingSkillId(data.id)
+        if (data.assets) {
+          setAssets(data.assets.map((a: any) => ({ id: crypto.randomUUID(), name: a.filename, storedPath: a.storedPath })))
+        }
+        message.success(editingSkillId ? '已更新' : '已保存到库')
+      } else {
+        const err = await res.json().catch(() => ({}))
+        message.error(err.error || '保存失败')
+      }
+    } catch (e: any) {
+      message.error(e.message || '保存失败')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   const handleDownload = async () => {
@@ -288,41 +312,45 @@ export default function SkillBuilder({ prompt, skillId }: Props) {
       return
     }
 
+    const yamlEscape = (v: string) => /[:#\[\]{},"'|>&*!%@`]/.test(v) || v.trim() !== v ? `"${v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"` : v
     const cats = prompt?.categories?.map((c: any) => `${c.category.dimension?.name}/${c.category.name}`).join(', ') || ''
     const tagStr = tags.length > 0 ? tags.join(', ') : (prompt?.tags?.map((t: any) => t.tag.name).join(', ') || '')
 
     const skillMd = [
       '---',
-      `name: ${skillName}`,
-      `description: ${description || prompt?.title || skillName}`,
-      cats ? `categories: ${cats}` : null,
-      tagStr ? `tags: ${tagStr}` : null,
-      (author || prompt?.author) ? `author: ${author || prompt?.author}` : null,
+      `name: ${yamlEscape(skillName)}`,
+      `description: ${yamlEscape(description || prompt?.title || skillName)}`,
+      cats ? `categories: ${yamlEscape(cats)}` : null,
+      tagStr ? `tags: ${yamlEscape(tagStr)}` : null,
+      (author || prompt?.author) ? `author: ${yamlEscape(author || prompt?.author || '')}` : null,
       '---',
       '',
       promptContent,
     ].filter(line => line !== null).join('\n')
 
+    const sanitizeName = (n: string) => n.replace(/\.\./g, '').replace(/[/\\]/g, '_')
     const zip = new JSZip()
-    const folder = zip.folder(skillName)!
+    const safeName = sanitizeName(skillName)
+    const folder = zip.folder(safeName)!
 
     folder.file('SKILL.md', skillMd)
 
     if (references.length > 0) {
       const refFolder = folder.folder('references')!
-      references.forEach(r => refFolder.file(r.name, r.content))
+      references.forEach(r => refFolder.file(sanitizeName(r.name), r.content))
     }
 
     if (scripts.length > 0) {
       const scriptFolder = folder.folder('scripts')!
-      scripts.forEach(s => scriptFolder.file(s.name, s.content))
+      scripts.forEach(s => scriptFolder.file(sanitizeName(s.name), s.content))
     }
 
     if (assets.length > 0) {
       const assetFolder = folder.folder('assets')!
       for (const a of assets) {
+        if (!a.file) continue
         const buf = await a.file.arrayBuffer()
-        assetFolder.file(a.name, buf)
+        assetFolder.file(sanitizeName(a.name), buf)
       }
     }
 
@@ -330,7 +358,7 @@ export default function SkillBuilder({ prompt, skillId }: Props) {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `${skillName}.zip`
+    link.download = `${safeName}.zip`
     link.click()
     URL.revokeObjectURL(url)
     message.success('Skill 包已下载')

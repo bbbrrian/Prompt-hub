@@ -43,11 +43,17 @@ export default function PromptForm({ initialData, isEdit }: Props) {
   const [tagOptions, setTagOptions] = useState<{ label: string; value: string | number }[]>([])
 
   useEffect(() => {
-    fetch('/api/categories').then(r => r.json()).then(setDimensions)
-    fetch('/api/tags').then(r => r.json()).then((data: Tag[]) => {
-      setTags(data)
-      setTagOptions(data.map(t => ({ label: t.name, value: String(t.id) })))
-    })
+    fetch('/api/categories')
+      .then(r => { if (!r.ok) throw new Error('categories'); return r.json() })
+      .then(setDimensions)
+      .catch(() => message.error('加载分类失败'))
+    fetch('/api/tags')
+      .then(r => { if (!r.ok) throw new Error('tags'); return r.json() })
+      .then((data: Tag[]) => {
+        setTags(data)
+        setTagOptions(data.map(t => ({ label: t.name, value: String(t.id) })))
+      })
+      .catch(() => message.error('加载标签失败'))
   }, [])
 
   useEffect(() => {
@@ -57,11 +63,11 @@ export default function PromptForm({ initialData, isEdit }: Props) {
         content: initialData.content,
         description: initialData.description || '',
         author: initialData.author || '',
-        categoryIds: initialData.categoryIds,
-        tagIds: initialData.tagIds.map(String),
+        categoryIds: initialData.categoryIds || [],
+        tagIds: initialData.tagIds || [],
         variables: initialData.variables || [],
-        visibility: (initialData as any).visibility || 'PUBLIC',
-        department: (initialData as any).department || '',
+        visibility: (initialData as FormData & { id?: number }).visibility || 'PUBLIC',
+        department: (initialData as FormData & { id?: number }).department || '',
       })
     }
   }, [initialData])
@@ -104,52 +110,55 @@ export default function PromptForm({ initialData, isEdit }: Props) {
       return
     }
     setSubmitting(true)
-
-    const resolvedTagIds: number[] = []
-    for (const val of form.tagIds) {
-      if (typeof val === 'number' || (typeof val === 'string' && /^\d+$/.test(val as string))) {
-        resolvedTagIds.push(Number(val))
-      } else {
-        const existing = tags.find(t => t.name === val)
-        if (existing) {
-          resolvedTagIds.push(existing.id)
+    try {
+      const resolvedTagIds: number[] = []
+      for (const val of form.tagIds) {
+        if (typeof val === 'number' || (typeof val === 'string' && /^\d+$/.test(val as string))) {
+          resolvedTagIds.push(Number(val))
         } else {
-          const res = await fetch('/api/tags', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: val }),
-          })
-          if (!res.ok) {
-            message.error(`创建标签"${val}"失败`)
-            setSubmitting(false)
-            return
+          const existing = tags.find(t => t.name === val)
+          if (existing) {
+            resolvedTagIds.push(existing.id)
+          } else {
+            const res = await fetch('/api/tags', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: val }),
+            })
+            if (!res.ok) {
+              message.error(`创建标签"${val}"失败`)
+              return
+            }
+            const newTag = await res.json()
+            resolvedTagIds.push(newTag.id)
+            setTags(prev => [...prev, newTag])
+            setTagOptions(prev => [...prev, { label: newTag.name, value: String(newTag.id) }])
           }
-          const newTag = await res.json()
-          resolvedTagIds.push(newTag.id)
-          setTags(prev => [...prev, newTag])
-          setTagOptions(prev => [...prev, { label: newTag.name, value: String(newTag.id) }])
         }
       }
-    }
 
-    const url = isEdit ? `/api/prompts/${initialData?.id}` : '/api/prompts'
-    const method = isEdit ? 'PUT' : 'POST'
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, tagIds: resolvedTagIds }),
-    })
-    setSubmitting(false)
-    if (res.ok) {
-      message.success(isEdit ? '更新成功' : '创建成功')
-      router.push('/prompts')
-    } else {
-      const err = await res.json().catch(() => ({}))
-      message.error(err.error || `操作失败 (${res.status})`)
+      const url = isEdit ? `/api/prompts/${initialData?.id}` : '/api/prompts'
+      const method = isEdit ? 'PUT' : 'POST'
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, tagIds: resolvedTagIds }),
+      })
+      if (res.ok) {
+        message.success(isEdit ? '更新成功' : '创建成功')
+        router.push('/prompts')
+      } else {
+        const err = await res.json().catch(() => ({}))
+        message.error(err.error || `操作失败 (${res.status})`)
+      }
+    } catch (e: any) {
+      message.error(e.message || '操作失败')
+    } finally {
+      setSubmitting(false)
     }
   }
 
-  const set = (key: keyof FormData, val: any) => setForm(prev => ({ ...prev, [key]: val }))
+  const set = <K extends keyof FormData>(key: K, val: FormData[K]) => setForm(prev => ({ ...prev, [key]: val }))
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
@@ -159,6 +168,7 @@ export default function PromptForm({ initialData, isEdit }: Props) {
           value={form.title}
           onChange={e => set('title', e.target.value)}
           placeholder="Prompt 标题"
+          maxLength={200}
           size="large"
         />
       </div>
@@ -169,6 +179,7 @@ export default function PromptForm({ initialData, isEdit }: Props) {
           value={form.content}
           onChange={e => set('content', e.target.value)}
           placeholder="输入 Prompt 内容..."
+          maxLength={50000}
           autoSize={{ minRows: 8, maxRows: 20 }}
           className="!font-mono"
         />

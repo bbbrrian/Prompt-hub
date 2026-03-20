@@ -21,6 +21,8 @@ interface AgentDetail extends AgentItem {
   tools: any
 }
 
+const DIVISION_TAGS = ['工程','设计','营销','销售','产品','项目管理','测试','支持','游戏开发','专业化','空间计算','学术']
+
 export default function AgentsPage() {
   const router = useRouter()
   const [items, setItems] = useState<AgentItem[]>([])
@@ -32,20 +34,23 @@ export default function AgentsPage() {
   const [detail, setDetail] = useState<AgentDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
 
-  const DIVISION_TAGS = ['工程','设计','营销','销售','产品','项目管理','测试','支持','游戏开发','专业化','空间计算','学术']
-
   const load = useCallback(async () => {
     setLoading(true)
-    const params = new URLSearchParams({ page: String(page), pageSize: '12' })
-    if (search) params.set('search', search)
-    if (tagFilter) params.set('tag', tagFilter)
-    const res = await fetch(`/api/agents?${params}`)
-    if (res.ok) {
-      const data = await res.json()
-      setItems(data.items)
-      setTotal(data.total)
+    try {
+      const params = new URLSearchParams({ page: String(page), pageSize: '12' })
+      if (search) params.set('search', search)
+      if (tagFilter) params.set('tag', tagFilter)
+      const res = await fetch(`/api/agents?${params}`)
+      if (res.ok) {
+        const data = await res.json()
+        setItems(data.items)
+        setTotal(data.total)
+      }
+    } catch (e: any) {
+      message.error(e.message || '加载失败')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [page, search, tagFilter])
 
   useEffect(() => { load() }, [load])
@@ -158,8 +163,8 @@ export default function AgentsPage() {
                     >
                       <EditOutlined />
                     </button>
-                    <Popconfirm title="确定删除？" onConfirm={() => handleDelete(item.id)} onClick={e => e.stopPropagation()}>
-                      <button className="text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-white/10 p-1.5" title="删除">
+                    <Popconfirm title="确定删除？" onConfirm={() => handleDelete(item.id)}>
+                      <button className="text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-white/10 p-1.5" title="删除" onClick={e => e.stopPropagation()}>
                         <DeleteOutlined />
                       </button>
                     </Popconfirm>
@@ -179,7 +184,7 @@ export default function AgentsPage() {
 
       <Modal
         open={!!detail || detailLoading}
-        onCancel={() => setDetail(null)}
+        onCancel={() => { setDetail(null); setDetailLoading(false) }}
         footer={null}
         width={800}
         title={detail ? (

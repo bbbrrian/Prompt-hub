@@ -24,7 +24,8 @@ export default function LoginPage() {
     const data = await res.json().catch(() => ({}))
     setLoading(false)
     if (res.ok) {
-      router.push('/')
+      window.location.href = '/'
+      return
     } else {
       message.error(data.error || '登录失败')
     }

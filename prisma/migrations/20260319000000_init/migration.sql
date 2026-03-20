@@ -241,3 +241,39 @@ ALTER TABLE "skill_tag" ADD CONSTRAINT "skill_tag_skill_id_fkey" FOREIGN KEY ("s
 -- AddForeignKey
 ALTER TABLE "skill_tag" ADD CONSTRAINT "skill_tag_tag_id_fkey" FOREIGN KEY ("tag_id") REFERENCES "tag"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- CreateTable
+CREATE TABLE "agent" (
+    "id" SERIAL NOT NULL,
+    "name" VARCHAR(200) NOT NULL,
+    "description" TEXT NOT NULL,
+    "system_prompt" TEXT NOT NULL,
+    "tools" JSONB,
+    "model" VARCHAR(100),
+    "author" VARCHAR(100),
+    "user_id" INTEGER,
+    "version" INTEGER NOT NULL DEFAULT 1,
+    "is_deleted" BOOLEAN NOT NULL DEFAULT false,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ NOT NULL,
+    CONSTRAINT "agent_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "agent_tag" (
+    "agent_id" INTEGER NOT NULL,
+    "tag_id" INTEGER NOT NULL,
+    CONSTRAINT "agent_tag_pkey" PRIMARY KEY ("agent_id","tag_id")
+);
+
+-- CreateIndex
+CREATE INDEX "agent_created_at_idx" ON "agent"("created_at" DESC);
+
+-- AddForeignKey
+ALTER TABLE "agent" ADD CONSTRAINT "agent_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "agent_tag" ADD CONSTRAINT "agent_tag_agent_id_fkey" FOREIGN KEY ("agent_id") REFERENCES "agent"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "agent_tag" ADD CONSTRAINT "agent_tag_tag_id_fkey" FOREIGN KEY ("tag_id") REFERENCES "tag"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

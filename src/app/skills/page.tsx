@@ -249,11 +249,13 @@ export default function SkillsPage() {
                     >
                       <DownloadOutlined />
                     </a>
-                    <Popconfirm title="确定删除？" onConfirm={() => handleDelete(item.id)} onClick={e => e.stopPropagation()}>
+                    <div onClick={e => e.stopPropagation()}>
+                    <Popconfirm title="确定删除？" onConfirm={() => handleDelete(item.id)}>
                       <button className="text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-white/10 p-1.5" title="删除">
                         <DeleteOutlined />
                       </button>
                     </Popconfirm>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -307,7 +309,7 @@ export default function SkillsPage() {
 
       <Modal
         open={!!detail || detailLoading}
-        onCancel={() => setDetail(null)}
+        onCancel={() => { setDetail(null); setDetailLoading(false) }}
         footer={null}
         width={800}
         title={detail ? <span className="font-mono text-base">{detail.name} <span className="text-xs font-normal text-gray-400 ml-2">v{detail.version}</span></span> : '加载中...'}

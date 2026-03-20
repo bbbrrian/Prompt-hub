@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { AGENTS } from '@/data/agents'
-
 const NeuralNetworkBg = dynamic(() => import('@/components/three/NeuralNetworkBg'), { ssr: false })
-
-const AGENT_COUNT = AGENTS.length
 
 interface QuickStats {
   totalPrompts: number
@@ -14,6 +10,7 @@ interface QuickStats {
   totalCopies: number
   totalCategories: number
   totalTags: number
+  totalAgents: number
   topPrompts: { title: string; copyCount: number }[]
   recentPrompts: { title: string; author: string; createdAt: string }[]
 }
@@ -28,9 +25,26 @@ const features = [
 
 export default function Home() {
   const [stats, setStats] = useState<QuickStats | null>(null)
+  const [statsLoading, setStatsLoading] = useState(true)
+  const [statsError, setStatsError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/stats').then(r => r.json()).then(setStats).catch(() => {})
+    setStatsLoading(true)
+    fetch('/api/stats')
+      .then(r => {
+        if (!r.ok) throw new Error('加载统计数据失败')
+        return r.json()
+      })
+      .then(data => {
+        setStats(data)
+        setStatsError(null)
+      })
+      .catch(e => {
+        setStatsError(e.message || '加载失败')
+      })
+      .finally(() => {
+        setStatsLoading(false)
+      })
   }, [])
 
   return (
@@ -56,13 +70,15 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mt-16 w-full max-w-5xl animate-slideUp relative z-10">
-          {[
-            { label: 'Prompt 总数', value: stats?.totalPrompts ?? '—', color: '#00ffff', href: '/prompts' },
-            { label: 'Skill 数', value: stats?.totalSkills ?? '—', color: '#FFA727', href: '/skills' },
-            { label: '使用次数', value: stats?.totalCopies ?? '—', color: '#bf00ff', href: '/dashboard' },
-            { label: '分类数', value: stats?.totalCategories ?? '—', color: '#0080ff', href: '/categories' },
-            { label: '标签数', value: stats?.totalTags ?? '—', color: '#ff6b6b', href: '/prompts' },
-            { label: 'Agent 数', value: AGENT_COUNT, color: '#00ff88', href: '/agents' },
+          {statsError ? (
+            <div className="col-span-full text-center text-red-400 text-sm py-4">{statsError}</div>
+          ) : [
+            { label: 'Prompt 总数', value: statsLoading ? '...' : (stats?.totalPrompts ?? '—'), color: '#00ffff', href: '/prompts' },
+            { label: 'Skill 数', value: statsLoading ? '...' : (stats?.totalSkills ?? '—'), color: '#FFA727', href: '/skills' },
+            { label: '使用次数', value: statsLoading ? '...' : (stats?.totalCopies ?? '—'), color: '#bf00ff', href: '/dashboard' },
+            { label: '分类数', value: statsLoading ? '...' : (stats?.totalCategories ?? '—'), color: '#0080ff', href: '/categories' },
+            { label: '标签数', value: statsLoading ? '...' : (stats?.totalTags ?? '—'), color: '#ff6b6b', href: '/prompts' },
+            { label: 'Agent 数', value: statsLoading ? '...' : (stats?.totalAgents ?? '—'), color: '#00ff88', href: '/agents' },
           ].map((s) => (
             <a key={s.label} href={s.href} className="text-center py-4 glass-card hover:scale-105 transition-transform block">
               <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>

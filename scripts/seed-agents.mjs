@@ -10,15 +10,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const jsonPath = path.join(__dirname, 'agents.json')
 const tsPath = path.join(__dirname, '../src/data/agents.ts')
 let AGENTS
-if (readFileSync && require === undefined || true) {
-  try {
-    AGENTS = JSON.parse(readFileSync(jsonPath, 'utf-8'))
-  } catch {
-    const raw = readFileSync(tsPath, 'utf-8')
-    const agentsMatch = raw.match(/export const AGENTS[^=]*=\s*(\[[\s\S]*\])\s*$/)
-    if (!agentsMatch) { console.error('无法解析 AGENTS'); process.exit(1) }
-    AGENTS = JSON.parse(agentsMatch[1])
-  }
+try {
+  AGENTS = JSON.parse(readFileSync(jsonPath, 'utf-8'))
+} catch {
+  const raw = readFileSync(tsPath, 'utf-8')
+  const agentsMatch = raw.match(/export const AGENTS[^=]*=\s*(\[[\s\S]*\])\s*$/)
+  if (!agentsMatch) { console.error('无法解析 AGENTS'); process.exit(1) }
+  AGENTS = JSON.parse(agentsMatch[1])
 }
 
 const prisma = new PrismaClient()
