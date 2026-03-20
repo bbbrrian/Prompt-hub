@@ -20,6 +20,7 @@ export async function middleware(req: NextRequest) {
 
   const token = req.cookies.get(COOKIE_NAME)?.value
   if (!token) {
+    console.log('[middleware] 无 token，路径:', pathname)
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -28,11 +29,13 @@ export async function middleware(req: NextRequest) {
 
   const payload = await verifyToken(token)
   if (!payload) {
+    console.log('[middleware] token 验证失败，路径:', pathname)
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     return NextResponse.redirect(new URL('/login', req.url))
   }
+  console.log('[middleware] token 验证通过，userId:', payload.userId, '路径:', pathname)
 
   const ADMIN_PATHS = ['/admin', '/api/admin']
   if (ADMIN_PATHS.some(p => pathname.startsWith(p)) && payload.role !== 'admin') {

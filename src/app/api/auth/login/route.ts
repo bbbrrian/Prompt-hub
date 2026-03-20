@@ -24,17 +24,22 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    console.log('[login] 查找用户:', email)
     const user = await prisma.user.findUnique({ where: { email } })
     if (!user) {
+      console.log('[login] 用户不存在')
       return NextResponse.json({ error: '邮箱或密码错误' }, { status: 401 })
     }
 
     const ok = await bcrypt.compare(password, user.passwordHash)
     if (!ok) {
+      console.log('[login] 密码错误')
       return NextResponse.json({ error: '邮箱或密码错误' }, { status: 401 })
     }
 
+    console.log('[login] 密码验证通过，生成 token')
     const token = await signToken({ userId: user.id, email: user.email, role: user.role })
+    console.log('[login] token 生成成功，长度:', token.length)
     const res = NextResponse.json({ ok: true, email: user.email, role: user.role })
     res.cookies.set(COOKIE_NAME, token, {
       httpOnly: true,
@@ -43,8 +48,10 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 7,
       path: '/',
     })
+    console.log('[login] cookie 已设置，COOKIE_NAME:', COOKIE_NAME, 'NODE_ENV:', process.env.NODE_ENV)
     return res
-  } catch {
+  } catch (e) {
+    console.error('[login] 异常:', e)
     return NextResponse.json({ error: '登录失败' }, { status: 500 })
   }
 }
