@@ -47,6 +47,12 @@ model Tag {
   @@map("tag")
 }
 
+enum Role {
+  SUPER_ADMIN
+  DEPT_ADMIN
+  USER
+}
+
 enum Visibility {
   PUBLIC
   DEPARTMENT
@@ -142,30 +148,62 @@ model WorkflowStep {
   @@map("workflow_step")
 }
 
+model Department {
+  id        Int          @id @default(autoincrement())
+  name      String       @unique
+  parentId  Int?
+  parent    Department?  @relation("DeptTree", fields: [parentId], references: [id])
+  children  Department[] @relation("DeptTree")
+  users     User[]
+  createdAt DateTime     @default(now())
+}
+
 model User {
-  id           Int        @id @default(autoincrement())
-  email        String     @unique @db.VarChar(200)
-  passwordHash String     @map("password_hash") @db.VarChar(255)
-  role         String     @default("user") @db.VarChar(20)
-  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz()
+  id           Int          @id @default(autoincrement())
+  email        String       @unique @db.VarChar(200)
+  passwordHash String       @map("password_hash") @db.VarChar(255)
+  role         Role         @default(USER)
+  departmentId Int?
+  department   Department?  @relation(fields: [departmentId], references: [id])
+  disabled     Boolean      @default(false)
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz()
   favorites    Favorite[]
   prompts      Prompt[]
   workflows    Workflow[]
   skills       Skill[]
   agents       Agent[]
+  auditLogs    AuditLog[]
 
   @@map("user")
 }
 
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  action     String
+  targetType String
+  targetId   Int
+  detail     Json?
+  createdAt  DateTime @default(now())
+}
+
 model Favorite {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @map("user_id")
-  promptId  Int      @map("prompt_id")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  prompt    Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  promptId   Int?     @map("prompt_id")
+  skillId    Int?     @map("skill_id")
+  agentId    Int?     @map("agent_id")
+  targetType String   @default("prompt") @map("target_type") @db.VarChar(20)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt     Prompt?  @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  skill      Skill?   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  agent      Agent?   @relation(fields: [agentId], references: [id], onDelete: Cascade)
 
   @@unique([userId, promptId])
+  @@unique([userId, skillId])
+  @@unique([userId, agentId])
   @@index([userId])
   @@map("favorite")
 }
@@ -189,6 +227,7 @@ model Skill {
   prompt        Prompt?    @relation(fields: [promptId], references: [id], onDelete: SetNull)
   user          User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   tags          SkillTag[]
+  favorites     Favorite[]
 
   @@index([createdAt(sort: Desc)])
   @@map("skill")
@@ -221,6 +260,7 @@ model Agent {
   updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz()
   user          User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   tags          AgentTag[]
+  favorites     Favorite[]
 
   @@index([createdAt(sort: Desc)])
   @@map("agent")

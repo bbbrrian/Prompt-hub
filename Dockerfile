@@ -1,5 +1,5 @@
 # ---- 构建阶段 ----
-FROM node:20-alpine AS builder
+FROM node:20.18.3-alpine3.21 AS builder
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ RUN npx prisma generate && npm run build && \
     node -e "const{transpileModule}=require('typescript');const ts=require('fs').readFileSync('prisma/seed.ts','utf8');const{outputText}=transpileModule(ts,{compilerOptions:{module:1,target:99,esModuleInterop:true}});require('fs').writeFileSync('scripts/seed.cjs',outputText)"
 
 # ---- 运行阶段 ----
-FROM node:20-alpine AS runner
+FROM node:20.18.3-alpine3.21 AS runner
 
 WORKDIR /app
 
@@ -37,8 +37,9 @@ COPY public ./public
 COPY <<'ENTRY' /app/entrypoint.sh
 #!/bin/sh
 node node_modules/prisma/build/index.js migrate deploy
-if [ ! -f /app/.seeded ]; then
-  node scripts/seed.cjs && node scripts/seed-agents.mjs && touch /app/.seeded
+USERS=$(node -e "const {PrismaClient}=require('@prisma/client');const p=new PrismaClient();p.user.count().then(n=>{console.log(n);p.\$disconnect()}).catch(()=>{console.log(0);p.\$disconnect()})" 2>/dev/null || echo 0)
+if [ "$USERS" = "0" ]; then
+  node scripts/seed.cjs && node scripts/seed-agents.mjs
 fi
 exec node server.js
 ENTRY

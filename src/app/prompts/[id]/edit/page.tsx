@@ -4,12 +4,15 @@ import { useEffect, useState, Suspense } from 'react'
 import { Spin, Result, Button } from 'antd'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import PromptForm from '@/components/ui/PromptForm'
+import { useUser, canModifyResource } from '@/hooks/useUser'
 
 function EditPromptContent() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const currentUser = useUser()
   const [data, setData] = useState<any>(null)
+  const [ownerId, setOwnerId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
@@ -20,6 +23,7 @@ function EditPromptContent() {
         return r.json()
       })
       .then(prompt => {
+        setOwnerId(prompt.userId ?? prompt.user?.id ?? null)
         const prefillStr = searchParams.get('prefill')
         let prefill: any = null
         if (prefillStr) {
@@ -58,10 +62,12 @@ function EditPromptContent() {
     )
   }
 
+  const isOwner = canModifyResource(currentUser, { userId: ownerId })
+
   return (
     <div>
-      <h2 className="text-2xl font-bold neon-text mb-6">编辑 Prompt</h2>
-      <PromptForm initialData={data} isEdit />
+      <h2 className="text-2xl font-bold neon-text mb-6">{isOwner ? '编辑 Prompt' : '填写变量并保存为我的副本'}</h2>
+      <PromptForm initialData={data} isEdit={isOwner} isFork={!isOwner} />
     </div>
   )
 }

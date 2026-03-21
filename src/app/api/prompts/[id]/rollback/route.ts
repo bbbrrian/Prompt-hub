@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken, COOKIE_NAME } from '@/lib/auth'
+import { canModify, writeAuditLog, UserPayload } from '@/lib/permission'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +20,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const current = await prisma.prompt.findUnique({ where: { id } })
   if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (current.userId !== payload.userId && payload.role !== 'admin') {
+  const user: UserPayload = {
+    userId: payload.userId,
+    email: payload.email,
+    role: (payload.role || 'USER') as UserPayload['role'],
+    departmentId: payload.departmentId ?? null
+  }
+
+  if (!canModify(user, current)) {
     return NextResponse.json({ error: '无权限' }, { status: 403 })
   }
 
@@ -46,6 +54,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       version: { increment: 1 },
     },
   })
+
+  await writeAuditLog(user.userId, 'ROLLBACK', 'Prompt', id, { versionId, toVersion: ver.version })
 
   return NextResponse.json(prompt)
 }

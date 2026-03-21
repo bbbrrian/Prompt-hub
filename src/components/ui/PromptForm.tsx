@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Input, Select, Button, message, TreeSelect, Switch, Table, InputNumber } from 'antd'
+import { Input, Select, Button, message, TreeSelect, Switch, Table, InputNumber, Modal } from 'antd'
 import { useRouter } from 'next/navigation'
 import type { Dimension, Tag, PromptVariable } from '@/store/prompt'
+import { useUser } from '@/hooks/useUser'
 
 const { TextArea } = Input
 
@@ -22,10 +23,14 @@ interface FormData {
 interface Props {
   initialData?: FormData & { id?: number }
   isEdit?: boolean
+  isFork?: boolean
 }
 
-export default function PromptForm({ initialData, isEdit }: Props) {
+export default function PromptForm({ initialData, isEdit, isFork }: Props) {
   const router = useRouter()
+  const currentUser = useUser()
+  const [forkModalOpen, setForkModalOpen] = useState(false)
+  const [forkVisibility, setForkVisibility] = useState<'PUBLIC' | 'PRIVATE'>('PRIVATE')
   const [form, setForm] = useState<FormData>({
     title: '',
     content: '',
@@ -139,13 +144,22 @@ export default function PromptForm({ initialData, isEdit }: Props) {
 
       const url = isEdit ? `/api/prompts/${initialData?.id}` : '/api/prompts'
       const method = isEdit ? 'PUT' : 'POST'
-      const res = await fetch(url, {
-        method,
+      const submitData = isFork
+        ? {
+            ...form,
+            tagIds: resolvedTagIds,
+            title: form.title.includes('(副本)') ? form.title : form.title + ' (副本)',
+            visibility: forkVisibility,
+            department: currentUser?.departmentName || '',
+          }
+        : { ...form, tagIds: resolvedTagIds }
+      const res = await fetch(isFork ? '/api/prompts' : url, {
+        method: isFork ? 'POST' : method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, tagIds: resolvedTagIds }),
+        body: JSON.stringify(submitData),
       })
       if (res.ok) {
-        message.success(isEdit ? '更新成功' : '创建成功')
+        message.success(isFork ? '已保存为我的副本' : isEdit ? '更新成功' : '创建成功')
         router.push('/prompts')
       } else {
         const err = await res.json().catch(() => ({}))
@@ -396,13 +410,43 @@ export default function PromptForm({ initialData, isEdit }: Props) {
       </div>
 
       <div className="flex gap-3 pt-4">
-        <Button type="primary" size="large" loading={submitting} onClick={handleSubmit}>
-          {isEdit ? '更新' : '创建'}
+        <Button type="primary" size="large" loading={submitting} onClick={isFork ? () => setForkModalOpen(true) : handleSubmit}>
+          {isFork ? '保存为我的副本' : isEdit ? '更新' : '创建'}
         </Button>
         <Button size="large" onClick={() => router.back()}>
           取消
         </Button>
       </div>
+
+      {isFork && (
+        <Modal
+          title="保存副本设置"
+          open={forkModalOpen}
+          onCancel={() => setForkModalOpen(false)}
+          onOk={() => { setForkModalOpen(false); handleSubmit() }}
+          confirmLoading={submitting}
+          okText="确认保存"
+        >
+          <div className="space-y-4 py-2">
+            <div>
+              <span className="text-sm text-gray-400">所属部门：</span>
+              <span className="text-sm text-gray-200">{currentUser?.departmentName || '未分配'}</span>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">可见性</label>
+              <Select
+                value={forkVisibility}
+                onChange={setForkVisibility}
+                className="w-full"
+                options={[
+                  { label: '公开 - 所有人可见', value: 'PUBLIC' },
+                  { label: '私有 - 仅自己可见', value: 'PRIVATE' },
+                ]}
+              />
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

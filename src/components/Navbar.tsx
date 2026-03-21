@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { ConfigProvider, theme, Dropdown, Avatar, message } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import Link from 'next/link'
+import { clearUserCache } from '@/hooks/useUser'
 
 export default function Navbar({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -24,6 +25,7 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
     setUser(null)
+    clearUserCache()
     message.success('已退出登录')
     router.push('/login')
   }
@@ -36,8 +38,8 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
       <Link
         href={href}
         className={`text-sm transition-colors whitespace-nowrap pb-1 ${active ? 'nav-active-indicator' : ''}`}
-        style={{ color: active ? '#00ffff' : undefined }}
-        onMouseEnter={e => { if (!active) (e.target as HTMLElement).style.color = '#00ffff' }}
+        style={{ color: active ? '#7ba8e8' : undefined }}
+        onMouseEnter={e => { if (!active) (e.target as HTMLElement).style.color = '#7ba8e8' }}
         onMouseLeave={e => { if (!active) (e.target as HTMLElement).style.color = '' }}
       >
         {label}
@@ -51,7 +53,7 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
       theme={{
         algorithm: theme.darkAlgorithm,
         token: {
-          colorPrimary: '#00ffff',
+          colorPrimary: '#1e50ae',
           colorBgContainer: 'rgba(255, 255, 255, 0.03)',
           colorBgElevated: 'rgba(10, 10, 30, 0.95)',
           colorBorder: 'rgba(255, 255, 255, 0.1)',
@@ -67,11 +69,9 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
           <header className="fixed top-0 left-0 right-0 z-50 glass-card border-t-0 border-x-0 rounded-none">
             <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-6">
               <div className="flex items-center gap-6 shrink-0">
-                <Link href="/" className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xl font-bold neon-text tracking-wider"
-                    style={{ background: 'rgba(0,255,255,0.06)', border: '1px solid rgba(0,255,255,0.12)' }}>
-                    ⚡ Prompt Hub
-                  </span>
+                <Link href="/" className="flex items-center gap-2.5">
+                  <img src="/logo.jpg" alt="XTEAMSOFT" className="w-9 h-9 rounded-full object-cover" style={{ border: '1px solid rgba(30,80,174,0.3)' }} />
+                  <span className="text-lg font-bold neon-text tracking-wide">Prompt Hub</span>
                 </Link>
                 {navLink('/', '首页')}
                 {navLink('/guide', 'AI 指南')}
@@ -92,7 +92,18 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                         { type: 'divider' },
                         { key: 'categories', label: <Link href="/categories">分类管理</Link> },
                         { key: 'favorites', label: <Link href="/favorites">我的收藏</Link> },
-                        { key: 'admin', label: <Link href="/admin">系统管理</Link> },
+                        ...(user.role === 'SUPER_ADMIN' ? [
+                          { type: 'divider' as const },
+                          { key: 'admin', label: <Link href="/admin">系统管理</Link> },
+                          { key: 'admin-users', label: <Link href="/admin/users">用户管理</Link> },
+                          { key: 'admin-depts', label: <Link href="/admin/departments">部门管理</Link> },
+                          { key: 'admin-audit', label: <Link href="/admin/audit-log">审计日志</Link> },
+                        ] : []),
+                        ...(user.role === 'DEPT_ADMIN' ? [
+                          { type: 'divider' as const },
+                          { key: 'dept-users', label: <Link href="/admin/dept-users">部门成员</Link> },
+                          { key: 'admin-audit', label: <Link href="/admin/audit-log">审计日志</Link> },
+                        ] : []),
                         { type: 'divider' },
                         { key: 'logout', label: '退出登录', danger: true, onClick: handleLogout },
                       ],
@@ -101,7 +112,7 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                   >
                     <Avatar
                       size={32}
-                      style={{ backgroundColor: '#00ffff', color: '#0a0a1e', cursor: 'pointer', fontWeight: 600 }}
+                      style={{ backgroundColor: '#1e50ae', color: '#ffffff', cursor: 'pointer', fontWeight: 600 }}
                     >
                       {user.email[0].toUpperCase()}
                     </Avatar>

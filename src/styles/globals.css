@@ -3,9 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --neon-cyan: #00ffff;
-  --neon-purple: #bf00ff;
-  --neon-blue: #0080ff;
+  --neon-cyan: #1e50ae;
+  --neon-purple: #3F23B4;
+  --neon-blue: #2563eb;
   --bg-dark: #0a0a0f;
   --bg-card: rgba(255, 255, 255, 0.03);
 }
@@ -27,25 +27,25 @@ body {
 
 .glass-card:hover {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(0, 255, 255, 0.2);
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.15), 0 0 40px rgba(0, 255, 255, 0.05);
+  border-color: rgba(30, 80, 174, 0.3);
+  box-shadow: 0 0 20px rgba(30, 80, 174, 0.2), 0 0 40px rgba(30, 80, 174, 0.05);
   transform: translateY(-2px);
 }
 
 .neon-text {
   color: var(--neon-cyan);
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.6), 0 0 20px rgba(0, 255, 255, 0.3);
+  text-shadow: 0 0 8px rgba(30, 80, 174, 0.5), 0 0 20px rgba(30, 80, 174, 0.2);
 }
 
 .neon-border {
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.15), inset 0 0 15px rgba(0, 255, 255, 0.05);
+  border: 1px solid rgba(30, 80, 174, 0.4);
+  box-shadow: 0 0 15px rgba(30, 80, 174, 0.15), inset 0 0 15px rgba(30, 80, 174, 0.05);
 }
 
 .neon-button {
-  background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 128, 255, 0.1));
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  color: var(--neon-cyan);
+  background: linear-gradient(135deg, rgba(30, 80, 174, 0.15), rgba(37, 99, 235, 0.1));
+  border: 1px solid rgba(30, 80, 174, 0.4);
+  color: #7ba8e8;
   padding: 8px 20px;
   border-radius: 8px;
   cursor: pointer;
@@ -54,8 +54,8 @@ body {
 }
 
 .neon-button:hover {
-  background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(0, 128, 255, 0.2));
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3), 0 0 40px rgba(0, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(30, 80, 174, 0.25), rgba(37, 99, 235, 0.2));
+  box-shadow: 0 0 20px rgba(30, 80, 174, 0.3), 0 0 40px rgba(30, 80, 174, 0.1);
   transform: translateY(-1px);
 }
 
@@ -71,8 +71,8 @@ body {
 
 .search-input:focus {
   outline: none;
-  border-color: rgba(0, 255, 255, 0.5);
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+  border-color: rgba(30, 80, 174, 0.6);
+  box-shadow: 0 0 15px rgba(30, 80, 174, 0.2);
 }
 
 .search-input::placeholder {
@@ -80,8 +80,8 @@ body {
 }
 
 mark {
-  background: rgba(0, 255, 255, 0.25);
-  color: var(--neon-cyan);
+  background: rgba(30, 80, 174, 0.25);
+  color: #7ba8e8;
   padding: 1px 3px;
   border-radius: 2px;
 }
@@ -98,7 +98,7 @@ mark {
 }
 
 .prompt-detail-modal .ant-modal-close:hover {
-  color: var(--neon-cyan);
+  color: #7ba8e8;
 }
 
 .ant-tree {
@@ -111,11 +111,11 @@ mark {
 }
 
 .ant-tree .ant-tree-node-content-wrapper:hover {
-  background: rgba(0, 255, 255, 0.08) !important;
+  background: rgba(30, 80, 174, 0.1) !important;
 }
 
 .ant-tree .ant-tree-node-content-wrapper.ant-tree-node-selected {
-  background: rgba(0, 255, 255, 0.12) !important;
+  background: rgba(30, 80, 174, 0.15) !important;
 }
 
 .ant-tree .ant-tree-switcher {
@@ -135,12 +135,12 @@ mark {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(100, 180, 180, 0.15);
+  background: rgba(30, 80, 174, 0.2);
   border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 180, 180, 0.3);
+  background: rgba(30, 80, 174, 0.4);
 }
 
 @keyframes fadeIn {
@@ -154,8 +154,8 @@ mark {
 }
 
 @keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 5px rgba(0, 255, 255, 0.3); }
-  50% { box-shadow: 0 0 15px rgba(0, 255, 255, 0.6), 0 0 30px rgba(0, 255, 255, 0.2); }
+  0%, 100% { box-shadow: 0 0 5px rgba(30, 80, 174, 0.3); }
+  50% { box-shadow: 0 0 15px rgba(30, 80, 174, 0.6), 0 0 30px rgba(30, 80, 174, 0.2); }
 }
 
 .animate-fadeIn {
@@ -172,7 +172,7 @@ mark {
 
 .stat-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 0 30px rgba(0, 255, 255, 0.2), 0 0 60px rgba(0, 255, 255, 0.05);
+  box-shadow: 0 0 30px rgba(30, 80, 174, 0.2), 0 0 60px rgba(30, 80, 174, 0.05);
 }
 
 .chart-card:hover {
@@ -207,7 +207,7 @@ mark {
   transform: translate(-50%, -50%);
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(0, 255, 255, 0.06) 0%, rgba(191, 0, 255, 0.03) 40%, transparent 70%);
+  background: radial-gradient(circle, rgba(30, 80, 174, 0.08) 0%, rgba(63, 35, 180, 0.04) 40%, transparent 70%);
   border-radius: 50%;
   pointer-events: none;
   animation: heroBreath 6s ease-in-out infinite;
@@ -267,5 +267,5 @@ mark {
   height: 2px;
   background: var(--neon-cyan);
   border-radius: 1px;
-  box-shadow: 0 0 6px rgba(0, 255, 255, 0.6);
+  box-shadow: 0 0 6px rgba(30, 80, 174, 0.6);
 }

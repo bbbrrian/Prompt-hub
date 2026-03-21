@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken, COOKIE_NAME } from '@/lib/auth'
 
-const PUBLIC_PATHS = new Set(['/login', '/register', '/api/auth/login', '/api/auth/register'])
+const PUBLIC_PATHS = new Set(['/login', '/register', '/api/auth/login', '/api/auth/register', '/api/departments'])
 
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
@@ -37,17 +37,31 @@ export async function middleware(req: NextRequest) {
   }
   console.log('[middleware] token 验证通过，userId:', payload.userId, '路径:', pathname)
 
-  const ADMIN_PATHS = ['/admin', '/api/admin']
-  if (ADMIN_PATHS.some(p => pathname.startsWith(p)) && payload.role !== 'admin') {
-    if (pathname.startsWith('/api/')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const SUPER_ADMIN_PATHS = ['/admin/users', '/admin/departments', '/api/admin/users', '/api/admin/departments']
+  const DEPT_ADMIN_PATHS = ['/admin/dept-users', '/admin/audit-log', '/api/admin/dept-users', '/api/admin/audit-log']
+  const ADMIN_BASE = ['/admin', '/api/admin']
+
+  if (SUPER_ADMIN_PATHS.some(p => pathname.startsWith(p))) {
+    if (payload.role !== 'SUPER_ADMIN') {
+      if (pathname.startsWith('/api/')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.redirect(new URL('/', req.url))
     }
-    return NextResponse.redirect(new URL('/', req.url))
+  } else if (DEPT_ADMIN_PATHS.some(p => pathname.startsWith(p))) {
+    if (payload.role !== 'SUPER_ADMIN' && payload.role !== 'DEPT_ADMIN') {
+      if (pathname.startsWith('/api/')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.redirect(new URL('/', req.url))
+    }
+  } else if (ADMIN_BASE.some(p => pathname.startsWith(p))) {
+    if (payload.role !== 'SUPER_ADMIN' && payload.role !== 'DEPT_ADMIN') {
+      if (pathname.startsWith('/api/')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.redirect(new URL('/', req.url))
+    }
   }
 
   const requestHeaders = new Headers(req.headers)
   requestHeaders.set('x-user-id', String(payload.userId))
   requestHeaders.set('x-user-role', payload.role)
+  requestHeaders.set('x-user-department-id', String(payload.departmentId ?? ''))
 
   const res = NextResponse.next({ request: { headers: requestHeaders } })
   Object.entries(SECURITY_HEADERS).forEach(([k, v]) => res.headers.set(k, v))

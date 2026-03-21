@@ -14,6 +14,8 @@ interface Workflow {
   id: number
   name: string
   description: string | null
+  userId?: number | null
+  user?: { id: number; email: string } | null
   steps: WorkflowStep[]
   createdAt: string
   updatedAt: string

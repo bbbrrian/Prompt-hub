@@ -85,7 +85,7 @@ export default function GlobalSearch() {
     >
       <div
         className="w-full max-w-2xl mx-4 rounded-2xl overflow-hidden"
-        style={{ background: 'rgba(10,10,30,0.97)', border: '1px solid rgba(0,255,255,0.2)', boxShadow: '0 0 60px rgba(0,255,255,0.1)' }}
+        style={{ background: 'rgba(10,10,30,0.97)', border: '1px solid rgba(30,80,174,0.2)', boxShadow: '0 0 60px rgba(30,80,174,0.1)' }}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06]">
@@ -117,7 +117,7 @@ export default function GlobalSearch() {
               <div
                 key={item.id}
                 className="px-5 py-3 cursor-pointer group transition-colors"
-                style={{ background: idx === selectedIdx ? 'rgba(0,255,255,0.06)' : 'transparent' }}
+                style={{ background: idx === selectedIdx ? 'rgba(30,80,174,0.06)' : 'transparent' }}
                 onMouseEnter={() => setSelectedIdx(idx)}
                 onClick={() => handleCopy(item)}
               >

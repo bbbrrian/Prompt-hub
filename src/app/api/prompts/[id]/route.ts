@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken, COOKIE_NAME } from '@/lib/auth'
+import { canModify, writeAuditLog, UserPayload } from '@/lib/permission'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   if (!prompt) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  if (prompt.visibility !== 'PUBLIC' && prompt.userId !== payload?.userId && payload?.role !== 'admin') {
+  if (prompt.visibility !== 'PUBLIC' && prompt.userId !== payload?.userId && payload?.role !== 'SUPER_ADMIN') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -44,8 +45,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const current = await prisma.prompt.findUnique({ where: { id } })
   if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  if (payload.userId !== current.userId && payload.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const user: UserPayload = {
+    userId: payload.userId,
+    email: payload.email,
+    role: (payload.role || 'USER') as UserPayload['role'],
+    departmentId: payload.departmentId ?? null
+  }
+
+  if (!canModify(user, current)) {
+    return NextResponse.json({ error: '无权限修改此内容' }, { status: 403 })
   }
 
   await prisma.$transaction([
@@ -88,6 +96,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     },
   })
 
+  await writeAuditLog(user.userId, 'UPDATE', 'Prompt', id, { title: body.title })
+
   return NextResponse.json(prompt)
 }
 
@@ -100,14 +110,23 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   const current = await prisma.prompt.findUnique({ where: { id } })
   if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  if (payload.userId !== current.userId && payload.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const user: UserPayload = {
+    userId: payload.userId,
+    email: payload.email,
+    role: (payload.role || 'USER') as UserPayload['role'],
+    departmentId: payload.departmentId ?? null
+  }
+
+  if (!canModify(user, current)) {
+    return NextResponse.json({ error: '无权限删除此内容' }, { status: 403 })
   }
 
   await prisma.prompt.update({
     where: { id },
     data: { isDeleted: true },
   })
+
+  await writeAuditLog(user.userId, 'DELETE', 'Prompt', id, { title: current.title })
 
   return NextResponse.json({ success: true })
 }

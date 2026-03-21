@@ -1,25 +1,35 @@
 'use client'
 
-import { useState } from 'react'
-import { Input, Button, message } from 'antd'
+import { useState, useEffect } from 'react'
+import { Input, Button, Select, message } from 'antd'
 import { useRouter } from 'next/navigation'
 
 export default function RegisterPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [departmentId, setDepartmentId] = useState<number | null>(null)
+  const [departments, setDepartments] = useState<{ id: number; name: string }[]>([])
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/departments').then(r => r.ok ? r.json() : []).then(setDepartments)
+  }, [])
 
   const handleRegister = async () => {
     if (!email || !password) {
       message.error('请填写邮箱和密码')
       return
     }
+    if (!departmentId) {
+      message.error('请选择部门')
+      return
+    }
     setLoading(true)
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, departmentId }),
     })
     const data = await res.json().catch(() => ({}))
     setLoading(false)
@@ -48,6 +58,16 @@ export default function RegisterPage() {
           <Input.Password
             value={password}
             onChange={e => setPassword(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">部门</label>
+          <Select
+            value={departmentId}
+            onChange={setDepartmentId}
+            placeholder="请选择部门"
+            className="w-full"
+            options={departments.map(d => ({ value: d.id, label: d.name }))}
           />
         </div>
         <Button type="primary" block size="large" loading={loading} onClick={handleRegister}>

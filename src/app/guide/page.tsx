@@ -123,7 +123,7 @@ export default function GuidePage() {
                 </li>
               ),
               blockquote: ({ children }) => (
-                <div className="glass-card p-4 my-4 border-l-3 border-cyan-500/50" style={{ borderLeft: '3px solid rgba(0,255,255,0.5)' }}>
+                <div className="glass-card p-4 my-4 border-l-3 border-cyan-500/50" style={{ borderLeft: '3px solid rgba(30,80,174,0.5)' }}>
                   {children}
                 </div>
               ),

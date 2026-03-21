@@ -53,17 +53,15 @@ export default function Home() {
         <NeuralNetworkBg />
         <div className="animate-fadeIn relative z-10 mt-16">
           <div className="flex justify-center mb-5">
-            <span className="inline-flex items-center justify-center w-16 h-16 rounded-2xl text-3xl"
-              style={{ background: 'linear-gradient(135deg, rgba(0,255,255,0.15), rgba(0,128,255,0.1))', border: '1px solid rgba(0,255,255,0.2)', boxShadow: '0 0 30px rgba(0,255,255,0.1)' }}>
-              ⚡
-            </span>
+            <img src="/logo.jpg" alt="XTEAMSOFT" className="w-20 h-20 rounded-full object-cover"
+              style={{ border: '2px solid rgba(30,80,174,0.3)', boxShadow: '0 0 30px rgba(30,80,174,0.15)' }} />
           </div>
-          <h2 className="text-5xl font-bold neon-text mb-3 tracking-tight">Prompt Hub</h2>
-          <p className="text-gray-300 text-lg font-medium mb-1.5">AI 提示词共享平台</p>
+          <h2 className="text-4xl font-bold neon-text mb-3 tracking-tight">西安中朗智控科技有限公司</h2>
+          <p className="text-gray-300 text-lg font-medium mb-1.5">XTEAMSOFT · AI 提示词共享平台</p>
           <p className="text-gray-600 text-xs mb-10 tracking-widest uppercase">规范驱动 · 模板沉淀 · 效果可量化</p>
           <div className="flex gap-4 justify-center">
             <a href="/prompts" className="neon-button text-base px-8 py-3">浏览 Prompt 库</a>
-            <a href="/prompts/new" className="neon-button text-base px-8 py-3" style={{ borderColor: 'rgba(191, 0, 255, 0.3)', color: '#bf00ff' }}>
+            <a href="/prompts/new" className="neon-button text-base px-8 py-3" style={{ borderColor: 'rgba(63, 35, 180, 0.3)', color: '#3F23B4' }}>
               创建新 Prompt
             </a>
           </div>
@@ -73,10 +71,10 @@ export default function Home() {
           {statsError ? (
             <div className="col-span-full text-center text-red-400 text-sm py-4">{statsError}</div>
           ) : [
-            { label: 'Prompt 总数', value: statsLoading ? '...' : (stats?.totalPrompts ?? '—'), color: '#00ffff', href: '/prompts' },
+            { label: 'Prompt 总数', value: statsLoading ? '...' : (stats?.totalPrompts ?? '—'), color: '#1e50ae', href: '/prompts' },
             { label: 'Skill 数', value: statsLoading ? '...' : (stats?.totalSkills ?? '—'), color: '#FFA727', href: '/skills' },
-            { label: '使用次数', value: statsLoading ? '...' : (stats?.totalCopies ?? '—'), color: '#bf00ff', href: '/dashboard' },
-            { label: '分类数', value: statsLoading ? '...' : (stats?.totalCategories ?? '—'), color: '#0080ff', href: '/categories' },
+            { label: '使用次数', value: statsLoading ? '...' : (stats?.totalCopies ?? '—'), color: '#3F23B4', href: '/dashboard' },
+            { label: '分类数', value: statsLoading ? '...' : (stats?.totalCategories ?? '—'), color: '#2563eb', href: '/categories' },
             { label: '标签数', value: statsLoading ? '...' : (stats?.totalTags ?? '—'), color: '#ff6b6b', href: '/prompts' },
             { label: 'Agent 数', value: statsLoading ? '...' : (stats?.totalAgents ?? '—'), color: '#00ff88', href: '/agents' },
           ].map((s) => (
@@ -120,10 +118,10 @@ export default function Home() {
                     <div className="flex items-center gap-3">
                       <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
                         style={{
-                          background: i < 3 ? ['rgba(0,255,255,0.15)', 'rgba(191,0,255,0.15)', 'rgba(0,128,255,0.15)'][i] : 'rgba(255,255,255,0.04)',
-                          color: i < 3 ? ['#00ffff', '#bf00ff', '#0080ff'][i] : '#555',
-                          border: `1px solid ${i < 3 ? ['rgba(0,255,255,0.3)', 'rgba(191,0,255,0.3)', 'rgba(0,128,255,0.3)'][i] : 'rgba(255,255,255,0.06)'}`,
-                          boxShadow: i < 3 ? `0 0 8px ${['rgba(0,255,255,0.2)', 'rgba(191,0,255,0.2)', 'rgba(0,128,255,0.2)'][i]}` : 'none',
+                          background: i < 3 ? ['rgba(30,80,174,0.15)', 'rgba(63,35,180,0.15)', 'rgba(37,99,235,0.15)'][i] : 'rgba(255,255,255,0.04)',
+                          color: i < 3 ? ['#1e50ae', '#3F23B4', '#2563eb'][i] : '#555',
+                          border: `1px solid ${i < 3 ? ['rgba(30,80,174,0.3)', 'rgba(63,35,180,0.3)', 'rgba(37,99,235,0.3)'][i] : 'rgba(255,255,255,0.06)'}`,
+                          boxShadow: i < 3 ? `0 0 8px ${['rgba(30,80,174,0.2)', 'rgba(63,35,180,0.2)', 'rgba(37,99,235,0.2)'][i]}` : 'none',
                         }}>
                         {i + 1}
                       </span>

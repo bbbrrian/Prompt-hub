@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Input, Pagination, message, Popconfirm, Upload, Empty, Spin, Dropdown, Modal, Tag, Select } from 'antd'
-import { SearchOutlined, DownloadOutlined, EditOutlined, DeleteOutlined, UploadOutlined, PlusOutlined, FileTextOutlined, EditFilled, EyeOutlined, FileOutlined, CodeOutlined, BookOutlined } from '@ant-design/icons'
+import { SearchOutlined, DownloadOutlined, EditOutlined, DeleteOutlined, UploadOutlined, PlusOutlined, FileTextOutlined, EditFilled, EyeOutlined, FileOutlined, CodeOutlined, BookOutlined, HeartOutlined, HeartFilled } from '@ant-design/icons'
 import { useRouter } from 'next/navigation'
+import { useUser, canModifyResource } from '@/hooks/useUser'
 
 interface SkillItem {
   id: number
@@ -27,6 +28,7 @@ interface SkillDetail extends SkillItem {
 
 export default function SkillsPage() {
   const router = useRouter()
+  const currentUser = useUser()
   const [items, setItems] = useState<SkillItem[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -37,6 +39,30 @@ export default function SkillsPage() {
   const [importing, setImporting] = useState(false)
   const [detail, setDetail] = useState<SkillDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [favMap, setFavMap] = useState<Record<number, boolean>>({})
+
+  useEffect(() => {
+    if (items.length === 0) return
+    const ids = items.map(i => i.id).join(',')
+    fetch(`/api/favorites/check?type=skill&ids=${ids}`)
+      .then(r => r.ok ? r.json() : {})
+      .then(setFavMap)
+      .catch(() => {})
+  }, [items])
+
+  const toggleFav = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const res = await fetch('/api/favorites', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ skillId: id }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setFavMap(prev => ({ ...prev, [id]: data.favorited }))
+      message.success(data.favorited ? '已收藏' : '已取消收藏')
+    }
+  }
 
   const [promptModalOpen, setPromptModalOpen] = useState(false)
   const [promptSearch, setPromptSearch] = useState('')
@@ -227,20 +253,29 @@ export default function SkillsPage() {
                   </div>
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
+                      className={`transition-colors rounded-full hover:bg-white/10 p-1.5 ${favMap[item.id] ? 'text-red-400 hover:text-red-300' : 'text-gray-400 hover:text-red-400'}`}
+                      title={favMap[item.id] ? '取消收藏' : '收藏'}
+                      onClick={e => toggleFav(item.id, e)}
+                    >
+                      {favMap[item.id] ? <HeartFilled /> : <HeartOutlined />}
+                    </button>
+                    <button
                       className="text-gray-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-white/10 p-1.5"
                       title="查看"
                       onClick={e => handleViewDetail(item.id, e)}
                     >
                       <EyeOutlined />
                     </button>
-                    <a
-                      href={item.prompt ? `/prompts/${item.prompt.id}/skill-builder?skillId=${item.id}` : `/skills/${item.id}/edit`}
-                      className="text-gray-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-white/10 p-1.5 inline-flex"
-                      title="编辑"
-                      onClick={e => e.stopPropagation()}
-                    >
-                      <EditOutlined />
-                    </a>
+                    {canModifyResource(currentUser, { userId: item.user?.id }) && (
+                      <a
+                        href={item.prompt ? `/prompts/${item.prompt.id}/skill-builder?skillId=${item.id}` : `/skills/${item.id}/edit`}
+                        className="text-gray-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-white/10 p-1.5 inline-flex"
+                        title="编辑"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <EditOutlined />
+                      </a>
+                    )}
                     <a
                       href={`/api/skills/${item.id}/download`}
                       className="text-gray-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-white/10 p-1.5 inline-flex"
@@ -249,13 +284,15 @@ export default function SkillsPage() {
                     >
                       <DownloadOutlined />
                     </a>
-                    <div onClick={e => e.stopPropagation()}>
-                    <Popconfirm title="确定删除？" onConfirm={() => handleDelete(item.id)}>
-                      <button className="text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-white/10 p-1.5" title="删除">
-                        <DeleteOutlined />
-                      </button>
-                    </Popconfirm>
-                    </div>
+                    {canModifyResource(currentUser, { userId: item.user?.id }) && (
+                      <div onClick={e => e.stopPropagation()}>
+                      <Popconfirm title="确定删除？" onConfirm={() => handleDelete(item.id)}>
+                        <button className="text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-white/10 p-1.5" title="删除">
+                          <DeleteOutlined />
+                        </button>
+                      </Popconfirm>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -399,12 +436,14 @@ export default function SkillsPage() {
                 {detail.prompt && <span>来源：<a href={`/prompts/${detail.prompt.id}/skill-builder`} className="text-cyan-400">{detail.prompt.title}</a></span>}
               </div>
               <div className="flex gap-2">
-                <a
-                  href={detail.prompt ? `/prompts/${detail.prompt.id}/skill-builder?skillId=${detail.id}` : `/skills/${detail.id}/edit`}
-                  className="text-cyan-400 hover:text-cyan-300"
-                >
-                  编辑
-                </a>
+                {canModifyResource(currentUser, { userId: detail.user?.id }) && (
+                  <a
+                    href={detail.prompt ? `/prompts/${detail.prompt.id}/skill-builder?skillId=${detail.id}` : `/skills/${detail.id}/edit`}
+                    className="text-cyan-400 hover:text-cyan-300"
+                  >
+                    编辑
+                  </a>
+                )}
                 <a href={`/api/skills/${detail.id}/download`} className="text-cyan-400 hover:text-cyan-300">下载</a>
               </div>
             </div>

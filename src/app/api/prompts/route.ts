@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken, COOKIE_NAME } from '@/lib/auth'
 import { verifyTokenWithUser } from '@/lib/auth-server'
+import { writeAuditLog } from '@/lib/permission'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,6 +46,7 @@ export async function GET(req: NextRequest) {
         include: {
           categories: { include: { category: { include: { dimension: true } } } },
           tags: { include: { tag: true } },
+          user: { select: { id: true, email: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
@@ -96,6 +98,7 @@ export async function POST(req: NextRequest) {
         tags: { include: { tag: true } },
       },
     })
+    await writeAuditLog(payload.userId, 'CREATE', 'Prompt', prompt.id, { title: prompt.title })
     return NextResponse.json(prompt, { status: 201 })
   } catch (e: any) {
     console.error('POST /api/prompts error:', e)

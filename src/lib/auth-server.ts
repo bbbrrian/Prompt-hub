@@ -6,6 +6,5 @@ export async function verifyTokenWithUser(token: string) {
   if (!payload) return null
   const user = await prisma.user.findUnique({ where: { id: payload.userId } })
   if (!user) return null
-  if (user.role !== payload.role) return null
-  return payload
+  return { ...payload, role: user.role, departmentId: user.departmentId ?? null }
 }

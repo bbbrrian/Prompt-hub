@@ -5,6 +5,7 @@ import { Button, Input, Modal, Select, Empty, Spin, message, Popconfirm, Drawer,
 import { DeleteOutlined, PlusOutlined, ExportOutlined, EditOutlined } from '@ant-design/icons'
 import { useWorkflowStore } from '@/store/workflow'
 import type { Workflow } from '@/store/workflow'
+import { useUser, canModifyResource } from '@/hooks/useUser'
 
 const { TextArea } = Input
 
@@ -20,6 +21,7 @@ interface PromptOption {
 
 export default function WorkflowsPage() {
   const { workflows, loading, fetchWorkflows, createWorkflow, updateWorkflow, deleteWorkflow } = useWorkflowStore()
+  const currentUser = useUser()
   const [prompts, setPrompts] = useState<PromptOption[]>([])
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Workflow | null>(null)
@@ -136,20 +138,22 @@ export default function WorkflowsPage() {
               </div>
               <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
                 <span className="text-xs text-gray-500">{new Date(w.updatedAt).toLocaleDateString()}</span>
-                <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-all">
-                  <button
-                    onClick={e => { e.stopPropagation(); openEdit(w) }}
-                    className="text-gray-400 hover:text-cyan-400"
-                    title="编辑"
-                  >
-                    <EditOutlined />
-                  </button>
-                  <Popconfirm title="确认删除？" onConfirm={(e) => { e?.stopPropagation(); deleteWorkflow(w.id) }} onCancel={(e) => e?.stopPropagation()}>
-                    <button onClick={e => e.stopPropagation()} className="text-gray-400 hover:text-red-400">
-                      <DeleteOutlined />
+                {canModifyResource(currentUser, { userId: w.user?.id }) && (
+                  <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-all">
+                    <button
+                      onClick={e => { e.stopPropagation(); openEdit(w) }}
+                      className="text-gray-400 hover:text-cyan-400"
+                      title="编辑"
+                    >
+                      <EditOutlined />
                     </button>
-                  </Popconfirm>
-                </div>
+                    <Popconfirm title="确认删除？" onConfirm={(e) => { e?.stopPropagation(); deleteWorkflow(w.id) }} onCancel={(e) => e?.stopPropagation()}>
+                      <button onClick={e => e.stopPropagation()} className="text-gray-400 hover:text-red-400">
+                        <DeleteOutlined />
+                      </button>
+                    </Popconfirm>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -173,23 +177,27 @@ export default function WorkflowsPage() {
               >
                 导出为 Skill 包
               </Button>
-              <Button
-                onClick={() => {
-                  openEdit(viewWorkflow)
-                  setViewDrawerOpen(false)
-                }}
-              >
-                编辑
-              </Button>
-              <Popconfirm
-                title="确认删除？"
-                onConfirm={() => {
-                  deleteWorkflow(viewWorkflow.id)
-                  setViewDrawerOpen(false)
-                }}
-              >
-                <Button danger>删除</Button>
-              </Popconfirm>
+              {canModifyResource(currentUser, { userId: viewWorkflow.user?.id }) && (
+                <>
+                  <Button
+                    onClick={() => {
+                      openEdit(viewWorkflow)
+                      setViewDrawerOpen(false)
+                    }}
+                  >
+                    编辑
+                  </Button>
+                  <Popconfirm
+                    title="确认删除？"
+                    onConfirm={() => {
+                      deleteWorkflow(viewWorkflow.id)
+                      setViewDrawerOpen(false)
+                    }}
+                  >
+                    <Button danger>删除</Button>
+                  </Popconfirm>
+                </>
+              )}
             </div>
           )
         }

@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { COOKIE_NAME } from '@/lib/auth'
 import { verifyTokenWithUser } from '@/lib/auth-server'
+import { writeAuditLog } from '@/lib/permission'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,9 +10,10 @@ export async function GET() {
   const workflows = await prisma.workflow.findMany({
     include: {
       steps: {
-        include: { prompt: { select: { id: true, title: true } } },
+        include: { prompt: { select: { id: true, title: true, content: true, variables: true } } },
         orderBy: { stepOrder: 'asc' },
       },
+      user: { select: { id: true, email: true } },
     },
     orderBy: { updatedAt: 'desc' },
   })
@@ -46,5 +48,6 @@ export async function POST(req: NextRequest) {
     },
   })
 
+  await writeAuditLog(payload.userId, 'CREATE', 'Workflow', workflow.id, { name: workflow.name })
   return NextResponse.json(workflow, { status: 201 })
 }

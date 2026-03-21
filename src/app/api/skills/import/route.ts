@@ -78,11 +78,14 @@ export async function POST(req: NextRequest) {
     const { tags, ...parsed } = parseSkillMd(skillMdContent)
 
     if (assetFiles.length > 0) {
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'skills', parsed.name)
+      const safeName = parsed.name.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 100) || 'imported-skill'
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'skills', safeName)
       fs.mkdirSync(uploadDir, { recursive: true })
       for (const af of assetFiles) {
-        fs.writeFileSync(path.join(uploadDir, af.filename), af.buffer)
-        assets.push({ filename: af.filename, storedPath: `/uploads/skills/${parsed.name}/${af.filename}` })
+        const safeFile = path.basename(af.filename).replace(/[^a-zA-Z0-9._-]/g, '')
+        if (!safeFile) continue
+        fs.writeFileSync(path.join(uploadDir, safeFile), af.buffer)
+        assets.push({ filename: safeFile, storedPath: `/uploads/skills/${safeName}/${safeFile}` })
       }
     }
 

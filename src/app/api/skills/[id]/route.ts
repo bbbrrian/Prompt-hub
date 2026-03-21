@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken, COOKIE_NAME } from '@/lib/auth'
+import { canModify, writeAuditLog, UserPayload } from '@/lib/permission'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,8 +26,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const id = Number(params.id)
   const existing = await prisma.skill.findUnique({ where: { id, isDeleted: false } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (existing.userId && existing.userId !== payload.userId && payload.role !== 'admin') {
-    return NextResponse.json({ error: '无权限' }, { status: 403 })
+  const user: UserPayload = {
+    userId: payload.userId,
+    email: payload.email,
+    role: (payload.role || 'USER') as UserPayload['role'],
+    departmentId: payload.departmentId ?? null
+  }
+
+  if (!canModify(user, existing)) {
+    return NextResponse.json({ error: '无权限修改此内容' }, { status: 403 })
   }
 
   const body = await req.json()
@@ -57,6 +65,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     },
   })
 
+  await writeAuditLog(user.userId, 'UPDATE', 'Skill', id, { name: body.name })
+
   return NextResponse.json(skill)
 }
 
@@ -81,10 +91,18 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   const id = Number(params.id)
   const existing = await prisma.skill.findUnique({ where: { id, isDeleted: false } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (existing.userId && existing.userId !== payload.userId && payload.role !== 'admin') {
-    return NextResponse.json({ error: '无权限' }, { status: 403 })
+  const user: UserPayload = {
+    userId: payload.userId,
+    email: payload.email,
+    role: (payload.role || 'USER') as UserPayload['role'],
+    departmentId: payload.departmentId ?? null
+  }
+
+  if (!canModify(user, existing)) {
+    return NextResponse.json({ error: '无权限删除此内容' }, { status: 403 })
   }
 
   await prisma.skill.update({ where: { id }, data: { isDeleted: true } })
+  await writeAuditLog(user.userId, 'DELETE', 'Skill', id, { name: existing.name })
   return NextResponse.json({ success: true })
 }

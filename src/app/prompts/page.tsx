@@ -5,6 +5,7 @@ import { Pagination, Spin, Empty, message, Button, Upload, Checkbox, Select, Mod
 import { DownloadOutlined, UploadOutlined, DeleteOutlined, TagOutlined, FolderOutlined, EyeOutlined, FileTextOutlined, FileOutlined } from '@ant-design/icons'
 import { usePromptStore } from '@/store/prompt'
 import type { PromptItem } from '@/store/prompt'
+import { useUser, canModifyResource } from '@/hooks/useUser'
 import PromptCard from '@/components/ui/PromptCard'
 import PromptDetail from '@/components/ui/PromptDetail'
 import SearchBar from '@/components/ui/SearchBar'
@@ -21,8 +22,10 @@ export default function PromptsPage() {
   const [batchTagIds, setBatchTagIds] = useState<number[]>([])
   const [batchVisibility, setBatchVisibility] = useState<string>('PUBLIC')
   const [batchSkillGuideOpen, setBatchSkillGuideOpen] = useState(false)
+  const currentUser = useUser()
 
-  const allSelected = items.length > 0 && items.every(i => selectedIds.includes(i.id))
+  const selectableItems = items.filter(i => canModifyResource(currentUser, i))
+  const allSelected = selectableItems.length > 0 && selectableItems.every(i => selectedIds.includes(i.id))
 
   const toggleSelect = (id: number) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
@@ -30,7 +33,7 @@ export default function PromptsPage() {
 
   const toggleAll = () => {
     if (allSelected) setSelectedIds([])
-    else setSelectedIds(items.map(i => i.id))
+    else setSelectedIds(selectableItems.map(i => i.id))
   }
 
   const treeData = dimensions.map((dim) => ({
@@ -183,7 +186,7 @@ export default function PromptsPage() {
 
           {selectedIds.length > 0 ? (
             <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-cyan-500/25"
-              style={{ background: 'linear-gradient(90deg, rgba(0,255,255,0.08), rgba(0,128,255,0.05))' }}>
+              style={{ background: 'linear-gradient(90deg, rgba(30,80,174,0.08), rgba(37,99,235,0.05))' }}>
               <Checkbox checked={allSelected} onChange={toggleAll} className="shrink-0" />
               <span className="text-sm font-medium text-cyan-300 shrink-0">已选 {selectedIds.length} 项</span>
               <div className="w-px h-4 bg-white/10 shrink-0" />
@@ -194,7 +197,7 @@ export default function PromptsPage() {
               <Button size="small" icon={<DownloadOutlined />} onClick={() => setBatchSkillGuideOpen(true)}>导出 Skill</Button>
               <Button size="small" type="link" className="ml-auto" onClick={() => setSelectedIds([])}>取消</Button>
             </div>
-          ) : items.length > 0 ? (
+          ) : selectableItems.length > 0 ? (
             <div className="flex items-center gap-2">
               <Checkbox checked={allSelected} onChange={toggleAll}>全选</Checkbox>
             </div>
@@ -211,13 +214,15 @@ export default function PromptsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {items.map((item) => (
                   <div key={item.id} className="relative">
-                    <div className="absolute top-2 left-2 z-10">
-                      <Checkbox
-                        checked={selectedIds.includes(item.id)}
-                        onChange={() => toggleSelect(item.id)}
-                        onClick={e => e.stopPropagation()}
-                      />
-                    </div>
+                    {canModifyResource(currentUser, item) && (
+                      <div className="absolute top-2 left-2 z-10">
+                        <Checkbox
+                          checked={selectedIds.includes(item.id)}
+                          onChange={() => toggleSelect(item.id)}
+                          onClick={e => e.stopPropagation()}
+                        />
+                      </div>
+                    )}
                     <PromptCard item={item} onView={setDetailItem} />
                   </div>
                 ))}

@@ -44,6 +44,8 @@ interface PromptItem {
   copyCount: number
   createdAt: string
   updatedAt: string
+  userId?: number | null
+  user?: { id: number; email: string } | null
   categories: { category: Category & { dimension: Dimension } }[]
   tags: { tag: Tag }[]
 }

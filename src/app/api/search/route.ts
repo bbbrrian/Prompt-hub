@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
 
   const where = {
     isDeleted: false,
+    visibility: 'PUBLIC' as const,
     OR: [
       { title: { contains: keyword, mode: 'insensitive' as const } },
       { content: { contains: keyword, mode: 'insensitive' as const } },

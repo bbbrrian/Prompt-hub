@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Input, Pagination, message, Popconfirm, Empty, Spin, Modal, Tag, Select } from 'antd'
-import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined } from '@ant-design/icons'
+import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, CopyOutlined, HeartOutlined, HeartFilled } from '@ant-design/icons'
 import { useRouter } from 'next/navigation'
+import { useUser, canModifyResource } from '@/hooks/useUser'
 
 interface AgentItem {
   id: number
@@ -13,6 +14,7 @@ interface AgentItem {
   model: string | null
   version: number
   createdAt: string
+  user: { id: number; email: string } | null
   tags: { tag: { id: number; name: string; color: string } }[]
 }
 
@@ -25,6 +27,7 @@ const DIVISION_TAGS = ['工程','设计','营销','销售','产品','项目管�
 
 export default function AgentsPage() {
   const router = useRouter()
+  const currentUser = useUser()
   const [items, setItems] = useState<AgentItem[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -33,6 +36,30 @@ export default function AgentsPage() {
   const [loading, setLoading] = useState(false)
   const [detail, setDetail] = useState<AgentDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [favMap, setFavMap] = useState<Record<number, boolean>>({})
+
+  useEffect(() => {
+    if (items.length === 0) return
+    const ids = items.map(i => i.id).join(',')
+    fetch(`/api/favorites/check?type=agent&ids=${ids}`)
+      .then(r => r.ok ? r.json() : {})
+      .then(setFavMap)
+      .catch(() => {})
+  }, [items])
+
+  const toggleFav = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const res = await fetch('/api/favorites', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agentId: id }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setFavMap(prev => ({ ...prev, [id]: data.favorited }))
+      message.success(data.favorited ? '已收藏' : '已取消收藏')
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -150,24 +177,55 @@ export default function AgentsPage() {
                   </div>
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
+                      className={`transition-colors rounded-full hover:bg-white/10 p-1.5 ${favMap[item.id] ? 'text-red-400 hover:text-red-300' : 'text-gray-400 hover:text-red-400'}`}
+                      title={favMap[item.id] ? '取消收藏' : '收藏'}
+                      onClick={e => toggleFav(item.id, e)}
+                    >
+                      {favMap[item.id] ? <HeartFilled /> : <HeartOutlined />}
+                    </button>
+                    <button
                       className="text-gray-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-white/10 p-1.5"
                       title="查看"
                       onClick={e => handleViewDetail(item.id, e)}
                     >
                       <EyeOutlined />
                     </button>
-                    <button
-                      className="text-gray-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-white/10 p-1.5"
-                      title="编辑"
-                      onClick={e => { e.stopPropagation(); router.push(`/agents/${item.id}/edit`) }}
-                    >
-                      <EditOutlined />
-                    </button>
-                    <Popconfirm title="确定删除？" onConfirm={() => handleDelete(item.id)}>
-                      <button className="text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-white/10 p-1.5" title="删除" onClick={e => e.stopPropagation()}>
-                        <DeleteOutlined />
+                    {!canModifyResource(currentUser, { userId: item.user?.id }) && (
+                      <button
+                        className="text-gray-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-white/10 p-1.5"
+                        title="复制到我的"
+                        onClick={async e => {
+                          e.stopPropagation()
+                          const res = await fetch(`/api/agents/${item.id}`)
+                          if (!res.ok) { message.error('获取详情失败'); return }
+                          const d = await res.json()
+                          const cr = await fetch('/api/agents', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name: d.name + ' (副本)', description: d.description, systemPrompt: d.systemPrompt, tools: d.tools, model: d.model, author: d.author }),
+                          })
+                          if (cr.ok) { message.success('已复制'); load() } else { message.error('复制失败') }
+                        }}
+                      >
+                        <CopyOutlined />
                       </button>
-                    </Popconfirm>
+                    )}
+                    {canModifyResource(currentUser, { userId: item.user?.id }) && (
+                      <button
+                        className="text-gray-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-white/10 p-1.5"
+                        title="编辑"
+                        onClick={e => { e.stopPropagation(); router.push(`/agents/${item.id}/edit`) }}
+                      >
+                        <EditOutlined />
+                      </button>
+                    )}
+                    {canModifyResource(currentUser, { userId: item.user?.id }) && (
+                      <Popconfirm title="确定删除？" onConfirm={() => handleDelete(item.id)}>
+                        <button className="text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-white/10 p-1.5" title="删除" onClick={e => e.stopPropagation()}>
+                          <DeleteOutlined />
+                        </button>
+                      </Popconfirm>
+                    )}
                   </div>
                 </div>
               </div>
@@ -243,12 +301,42 @@ export default function AgentsPage() {
 
             <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] text-xs text-gray-500">
               <span>创建于 {new Date(detail.createdAt).toLocaleDateString()}</span>
-              <button
-                className="text-cyan-400 hover:text-cyan-300"
-                onClick={() => { setDetail(null); router.push(`/agents/${detail.id}/edit`) }}
-              >
-                编辑
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  className="text-gray-400 hover:text-cyan-300"
+                  onClick={async () => {
+                    const res = await fetch('/api/agents', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        name: detail.name + ' (副本)',
+                        description: detail.description,
+                        systemPrompt: detail.systemPrompt,
+                        tools: detail.tools,
+                        model: detail.model,
+                        author: detail.author,
+                      }),
+                    })
+                    if (res.ok) {
+                      message.success('已复制到我的 Agent')
+                      setDetail(null)
+                      load()
+                    } else {
+                      message.error('复制失败')
+                    }
+                  }}
+                >
+                  <CopyOutlined className="mr-1" />复制到我的
+                </button>
+                {canModifyResource(currentUser, { userId: detail.user?.id }) && (
+                  <button
+                    className="text-cyan-400 hover:text-cyan-300"
+                    onClick={() => { setDetail(null); router.push(`/agents/${detail.id}/edit`) }}
+                  >
+                    编辑
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}

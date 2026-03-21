@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   if (!checkRate(ip)) return NextResponse.json({ error: '请求过于频繁，请稍后再试' }, { status: 429 })
 
   const body = await req.json()
-  const { email, password } = body
+  const { email, password, departmentId } = body
 
   if (!email || typeof email !== 'string' || !email.includes('@')) {
     return NextResponse.json({ error: '邮箱格式不正确' }, { status: 400 })
@@ -25,8 +25,16 @@ export async function POST(req: NextRequest) {
   if (!password || typeof password !== 'string' || password.length < 6) {
     return NextResponse.json({ error: '密码不能少于6位' }, { status: 400 })
   }
+  if (!departmentId || typeof departmentId !== 'number') {
+    return NextResponse.json({ error: '部门不能为空' }, { status: 400 })
+  }
 
   try {
+    const dept = await prisma.department.findUnique({ where: { id: departmentId } })
+    if (!dept) {
+      return NextResponse.json({ error: '部门不存在' }, { status: 400 })
+    }
+
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) {
       return NextResponse.json({ error: '邮箱已注册' }, { status: 409 })
@@ -34,15 +42,15 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 10)
     const user = await prisma.user.create({
-      data: { email, passwordHash },
-      select: { id: true, email: true, role: true },
+      data: { email, passwordHash, departmentId },
+      select: { id: true, email: true, role: true, departmentId: true },
     })
 
-    const token = await signToken({ userId: user.id, email: user.email, role: user.role })
+    const token = await signToken({ userId: user.id, email: user.email, role: user.role, departmentId: user.departmentId })
     const res = NextResponse.json({ ok: true })
     res.cookies.set(COOKIE_NAME, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.COOKIE_SECURE === 'true',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7,
       path: '/',

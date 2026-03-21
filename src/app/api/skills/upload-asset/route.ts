@@ -24,8 +24,10 @@ export async function POST(req: NextRequest) {
   if (!ALLOWED_EXTS.has(ext)) return NextResponse.json({ error: '不支持的文件类型' }, { status: 400 })
   const filename = `${crypto.randomUUID()}${ext}`
 
-  const id = (skillId || 'temp').replace(/[^a-zA-Z0-9_-]/g, '')
+  const id = (skillId || 'temp').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 100) || 'temp'
   const dir = path.join(process.cwd(), 'public', 'uploads', 'skills', id, 'assets')
+  const baseDir = path.join(process.cwd(), 'public', 'uploads')
+  if (!dir.startsWith(baseDir)) return NextResponse.json({ error: '非法路径' }, { status: 400 })
   fs.mkdirSync(dir, { recursive: true })
 
   const buffer = Buffer.from(await file.arrayBuffer())

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken, COOKIE_NAME } from '@/lib/auth'
+import { canModify, writeAuditLog, UserPayload } from '@/lib/permission'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,8 +29,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const current = await prisma.workflow.findUnique({ where: { id } })
   if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  if (current.userId !== null && payload?.userId !== current.userId && payload?.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const user: UserPayload = {
+    userId: payload?.userId ?? 0,
+    email: '',
+    role: ((payload?.role) || 'USER') as UserPayload['role'],
+    departmentId: payload?.departmentId ?? null
+  }
+
+  if (!canModify(user, current)) {
+    return NextResponse.json({ error: '无权限修改此内容' }, { status: 403 })
   }
 
   await prisma.workflowStep.deleteMany({ where: { workflowId: id } })
@@ -55,6 +63,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     },
   })
 
+  await writeAuditLog(user.userId, 'UPDATE', 'Workflow', id, { name })
+
   return NextResponse.json(workflow)
 }
 
@@ -66,10 +76,18 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   const current = await prisma.workflow.findUnique({ where: { id } })
   if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  if (current.userId !== null && payload?.userId !== current.userId && payload?.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const user: UserPayload = {
+    userId: payload?.userId ?? 0,
+    email: '',
+    role: ((payload?.role) || 'USER') as UserPayload['role'],
+    departmentId: payload?.departmentId ?? null
+  }
+
+  if (!canModify(user, current)) {
+    return NextResponse.json({ error: '无权限删除此内容' }, { status: 403 })
   }
 
   await prisma.workflow.delete({ where: { id } })
+  await writeAuditLog(user.userId, 'DELETE', 'Workflow', id, { name: current.name })
   return NextResponse.json({ success: true })
 }

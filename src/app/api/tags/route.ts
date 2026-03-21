@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   if (!payload) return NextResponse.json({ error: '未登录' }, { status: 401 })
   const body = await req.json()
   const tag = await prisma.tag.create({
-    data: { name: body.name, color: body.color || '#00ffff' },
+    data: { name: body.name, color: body.color || '#1e50ae' },
   })
   return NextResponse.json(tag, { status: 201 })
 }

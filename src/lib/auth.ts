@@ -7,7 +7,7 @@ function getSecret() {
   return new TextEncoder().encode(process.env.JWT_SECRET)
 }
 
-export async function signToken(payload: { userId: number; email: string; role: string }) {
+export async function signToken(payload: { userId: number; email: string; role: string; departmentId: number | null }) {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -18,7 +18,7 @@ export async function signToken(payload: { userId: number; email: string; role: 
 export async function verifyToken(token: string) {
   try {
     const { payload } = await jwtVerify(token, getSecret())
-    return payload as { userId: number; email: string; role: string }
+    return payload as { userId: number; email: string; role: string; departmentId: number | null }
   } catch {
     return null
   }

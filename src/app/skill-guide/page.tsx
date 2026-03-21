@@ -117,7 +117,7 @@ export default function SkillGuidePage() {
                 </li>
               ),
               blockquote: ({ children }) => (
-                <div className="glass-card p-4 my-4" style={{ borderLeft: '3px solid rgba(0,255,255,0.5)' }}>
+                <div className="glass-card p-4 my-4" style={{ borderLeft: '3px solid rgba(30,80,174,0.5)' }}>
                   {children}
                 </div>
               ),

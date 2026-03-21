@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { COOKIE_NAME } from '@/lib/auth'
 import { verifyTokenWithUser } from '@/lib/auth-server'
 import { validateTags, resolveTagIds } from '@/lib/tag-utils'
+import { writeAuditLog } from '@/lib/permission'
 
 export const dynamic = 'force-dynamic'
 
@@ -106,6 +107,7 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    await writeAuditLog(payload.userId, 'CREATE', 'Skill', skill.id, { name: skill.name })
     return NextResponse.json(skill, { status: 201 })
   } catch {
     return NextResponse.json({ error: '服务器内部错误' }, { status: 500 })

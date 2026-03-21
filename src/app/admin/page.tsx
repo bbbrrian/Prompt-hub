@@ -41,6 +41,20 @@ export default function AdminPage() {
     <div className="space-y-6 max-w-2xl">
       <h2 className="text-2xl font-bold neon-text">系统管理</h2>
 
+      <div className="grid grid-cols-2 gap-4">
+        {[
+          { href: '/admin/users', title: '用户管理', desc: '管理用户角色、部门、启禁用' },
+          { href: '/admin/departments', title: '部门管理', desc: '部门的增删改查' },
+          { href: '/admin/dept-users', title: '部门成员', desc: '查看本部门成员列表' },
+          { href: '/admin/audit-log', title: '审计日志', desc: '查看系统操作记录' },
+        ].map(item => (
+          <a key={item.href} href={item.href} className="glass-card p-5 block group">
+            <h3 className="text-base font-semibold text-gray-200 group-hover:text-[#7ba8e8] transition-colors">{item.title}</h3>
+            <p className="text-sm text-gray-500 mt-1">{item.desc}</p>
+          </a>
+        ))}
+      </div>
+
       <div className="glass-card p-6 space-y-5">
         <h3 className="text-lg font-semibold text-gray-200">AI 配置</h3>
         <p className="text-sm text-gray-500">API Key 通过服务器环境变量 AI_API_KEY 配置，不在前端存储。</p>
