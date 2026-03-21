@@ -152,6 +152,29 @@ src/
 
 ## 迭代记录
 
+### v2.0（2026-03）
+- **RBAC 权限系统**：三级角色体系（SUPER_ADMIN / DEPT_ADMIN / USER），部门管理（支持父子关系），用户管理（角色/部门/启禁用），审计日志（全平台操作追踪）
+  - 新增 `Department` 表、`AuditLog` 表，`User.role` 改为枚举，新增 `departmentId`、`disabled` 字段
+  - 统一权限函数 `canModify`：超管全权限，其他人只能修改自己的内容
+  - 中间件精确路由保护：`/admin/users`、`/admin/departments` 仅 SUPER_ADMIN；`/admin/dept-users`、`/admin/audit-log` 需 DEPT_ADMIN 及以上
+  - 新增「复制到我的」功能，支持跨用户内容复用
+  - 注册页新增部门选择，Navbar 管理入口按角色动态显示
+- **安全修复**（14 项）：
+  - [CRITICAL] 角色枚举不一致修复：`'admin'` 统一改为 `'SUPER_ADMIN'`，权限检查不再失效
+  - [HIGH] `admin/users` 路由改用 cookie + JWT 验证，不再信任可伪造的 `x-user-role` 请求头
+  - [HIGH] 移除登录路由中泄露邮箱、token 长度的 `console.log`
+  - [MEDIUM] `.dockerignore` 补充 `.env*`、`.git`，防止敏感文件打包进镜像
+  - [MEDIUM] Dockerfile 镜像版本锁定为 `node:20.18.3-alpine3.21`，构建可复现
+  - [MEDIUM] Docker entrypoint 改为查询 DB 用户数判断是否 seed，不再依赖容器内文件
+  - [MEDIUM] ZIP 导入路径遍历修复：skill name 和 asset 文件名净化，防止写出目标目录
+  - [MEDIUM] 文件上传添加路径边界检查，防止任意目录创建
+  - [MEDIUM] 添加 `Content-Security-Policy` 和 `Strict-Transport-Security` 响应头
+  - [MEDIUM] 搜索 API 添加 `visibility=PUBLIC` 过滤，不再返回私有内容
+  - [MEDIUM] `.env.example` 补充 `COOKIE_SECURE` 配置说明
+  - [MEDIUM] `prisma` 依赖由 `^5.22.0` 改为精确版本，确保生产一致性
+  - [MEDIUM] `rbac-migration.sql` `RENAME COLUMN` 改为幂等操作，可重复执行
+- **测试**：新增 vitest 测试框架，7 个测试文件覆盖核心安全逻辑
+
 ### v1.9（2026-03）
 - **全面安全审查**：修复 23 个高危 + 33 个中危问题
   - 认证：JWT role 与数据库一致性校验、middleware 精确路径匹配、安全响应头（X-Frame-Options / X-Content-Type-Options / Referrer-Policy）
