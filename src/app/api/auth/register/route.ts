@@ -40,9 +40,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '邮箱已注册' }, { status: 409 })
     }
 
+    const userCount = await prisma.user.count()
     const passwordHash = await bcrypt.hash(password, 10)
     const user = await prisma.user.create({
-      data: { email, passwordHash, departmentId },
+      data: { email, passwordHash, departmentId, role: userCount === 0 ? 'SUPER_ADMIN' : 'USER' },
       select: { id: true, email: true, role: true, departmentId: true },
     })
 
