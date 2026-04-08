@@ -3,6 +3,12 @@
 import { useState } from 'react'
 import { Input, Button, message } from 'antd'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
+
+const LaserFlow = dynamic(() => import('@/components/three/LaserFlow').then(m => m.default), {
+  ssr: false,
+  loading: () => null,
+})
 
 export default function LoginPage() {
   const router = useRouter()
@@ -32,32 +38,75 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="glass-card p-8 w-full max-w-sm space-y-5">
-        <h2 className="text-2xl font-bold neon-text text-center">登录 Prompt Hub</h2>
-        <div>
-          <label className="block text-sm text-gray-400 mb-1">邮箱</label>
-          <Input
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="your@email.com"
-            onPressEnter={handleLogin}
-          />
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        overflow: 'hidden',
+        backgroundColor: '#060010',
+        zIndex: 1,
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: 0,
+          bottom: 0,
+          width: '70vw',
+          transform: 'translateX(-50%)',
+          overflow: 'hidden',
+          zIndex: 0,
+          pointerEvents: 'none',
+        }}
+      >
+        <LaserFlow
+          horizontalBeamOffset={0.0}
+          verticalBeamOffset={0.18}
+          wispDensity={1.3}
+          wispIntensity={6}
+          flowStrength={0.35}
+          fogIntensity={0.55}
+          color="#CF9EFF"
+        />
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '0 1rem',
+          zIndex: 10,
+        }}
+      >
+        <div className="glass-card p-8 w-full max-w-sm space-y-5 backdrop-blur-xl bg-black/50 border border-white/10">
+          <h2 className="text-2xl font-bold neon-text text-center">登录 Prompt Hub</h2>
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">邮箱</label>
+            <Input
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              onPressEnter={handleLogin}
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">密码</label>
+            <Input.Password
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onPressEnter={handleLogin}
+            />
+          </div>
+          <Button type="primary" block size="large" loading={loading} onClick={handleLogin}>
+            登录
+          </Button>
+          <p className="text-center text-sm text-gray-500">
+            没有账号？<a href="/register" className="text-cyan-400 hover:underline">注册</a>
+          </p>
         </div>
-        <div>
-          <label className="block text-sm text-gray-400 mb-1">密码</label>
-          <Input.Password
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            onPressEnter={handleLogin}
-          />
-        </div>
-        <Button type="primary" block size="large" loading={loading} onClick={handleLogin}>
-          登录
-        </Button>
-        <p className="text-center text-sm text-gray-500">
-          没有账号？<a href="/register" className="text-cyan-400 hover:underline">注册</a>
-        </p>
       </div>
     </div>
   )

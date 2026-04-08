@@ -5,6 +5,7 @@ import { Input, Pagination, message, Popconfirm, Empty, Spin, Modal, Tag, Select
 import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, CopyOutlined, HeartOutlined, HeartFilled } from '@ant-design/icons'
 import { useRouter } from 'next/navigation'
 import { useUser, canModifyResource } from '@/hooks/useUser'
+import BorderGlow from '@/components/ui/BorderGlow'
 
 interface AgentItem {
   id: number
@@ -149,11 +150,12 @@ export default function AgentsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {items.map(item => (
-              <div
+              <BorderGlow
                 key={item.id}
-                className="glass-card p-5 space-y-3 group cursor-pointer hover:border-cyan-500/30 transition-colors"
+                className="group cursor-pointer"
                 onClick={e => handleViewDetail(item.id, e)}
               >
+                <div className="p-5 space-y-3">
                 <div className="flex items-start justify-between">
                   <h3 className="text-base font-semibold text-gray-100 truncate flex-1 mr-2 font-mono">{item.name}</h3>
                   <span className="badge shrink-0">v{item.version}</span>
@@ -228,7 +230,8 @@ export default function AgentsPage() {
                     )}
                   </div>
                 </div>
-              </div>
+                </div>
+              </BorderGlow>
             ))}
           </div>
         )}

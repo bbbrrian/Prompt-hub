@@ -6,6 +6,7 @@ import { DeleteOutlined, PlusOutlined, ExportOutlined, EditOutlined } from '@ant
 import { useWorkflowStore } from '@/store/workflow'
 import type { Workflow } from '@/store/workflow'
 import { useUser, canModifyResource } from '@/hooks/useUser'
+import BorderGlow from '@/components/ui/BorderGlow'
 
 const { TextArea } = Input
 
@@ -118,11 +119,12 @@ export default function WorkflowsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {workflows.map(w => (
-            <div
+            <BorderGlow
               key={w.id}
-              className="glass-card p-5 cursor-pointer group"
+              className="cursor-pointer group"
               onClick={() => { setViewWorkflow(w); setViewDrawerOpen(true) }}
             >
+              <div className="p-5">
               <div className="flex items-start justify-between mb-3">
                 <h3 className="text-base font-semibold text-gray-100 truncate flex-1 mr-2">{w.name}</h3>
                 <span className="text-xs text-gray-500">{w.steps.length} 步</span>
@@ -155,7 +157,8 @@ export default function WorkflowsPage() {
                   </div>
                 )}
               </div>
-            </div>
+              </div>
+            </BorderGlow>
           ))}
         </div>
       )}

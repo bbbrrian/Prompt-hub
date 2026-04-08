@@ -6,6 +6,7 @@ import { CopyOutlined, EditOutlined, DeleteOutlined, EyeOutlined, HeartOutlined,
 import type { PromptItem } from '@/store/prompt'
 import { usePromptStore } from '@/store/prompt'
 import { useUser, canModifyResource } from '@/hooks/useUser'
+import BorderGlow from '@/components/ui/BorderGlow'
 
 function Highlight({ text, keyword }: { text: string; keyword: string }) {
   if (!keyword.trim()) return <>{text}</>
@@ -66,7 +67,8 @@ export default function PromptCard({ item, onView }: Props) {
   }
 
   return (
-    <div className="glass-card p-5 cursor-pointer group" onClick={() => onView(item)}>
+    <BorderGlow className="cursor-pointer group !block" onClick={() => onView(item)}>
+      <div className="p-5">
       <div className="flex items-start justify-between mb-3">
         <h3 className="text-base font-semibold text-gray-100 truncate flex-1 mr-2"><Highlight text={item.title} keyword={keyword} /></h3>
         <span className="badge shrink-0">v{item.version}</span>
@@ -134,6 +136,7 @@ export default function PromptCard({ item, onView }: Props) {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </BorderGlow>
   )
 }

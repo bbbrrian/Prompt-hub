@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import MagicBento from '@/components/ui/MagicBento'
 
 interface Stats {
   totalPrompts: number
@@ -111,6 +112,74 @@ function NeonTagCloud({ data, color }: { data: { name: string; value: number }[]
   )
 }
 
+function MiniSparkline({ data, color }: { data: { date: string; count: number }[]; color: string }) {
+  if (!data || data.length < 2) {
+    return <div className="text-xs" style={{ color: `${color}88` }}>暂无趋势数据</div>
+  }
+  const max = Math.max(...data.map(d => d.count), 1)
+  const W = 300
+  const H = 64
+  const pad = 4
+  const xScale = (i: number) => pad + (i / (data.length - 1)) * (W - pad * 2)
+  const yScale = (v: number) => pad + (1 - v / max) * (H - pad * 2)
+  const pts = data.map((d, i) => `${xScale(i)},${yScale(d.count)}`).join(' ')
+  const poly = `${pts} ${xScale(data.length - 1)},${H - pad} ${xScale(0)},${H - pad}`
+  const gradId = `mini-spark-${color.replace(/\W/g, '')}`
+  const total = data.reduce((s, d) => s + d.count, 0)
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1 text-[10px]" style={{ color: `${color}cc` }}>
+        <span>近 30 天趋势</span>
+        <span className="font-mono">{total} 次</span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block', height: 64 }}>
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.5" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon points={poly} fill={`url(#${gradId})`} />
+        <polyline points={pts} fill="none" stroke={color} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
+      </svg>
+    </div>
+  )
+}
+
+function MiniBars({ data, color }: { data: { name: string; value: number }[]; color: string }) {
+  const filtered = data.filter(d => d.value > 0).slice(0, 4)
+  if (!filtered.length) {
+    return <div className="text-xs" style={{ color: `${color}88` }}>暂无分类数据</div>
+  }
+  const max = Math.max(...filtered.map(d => d.value), 1)
+  return (
+    <div>
+      <div className="text-[10px] mb-2" style={{ color: `${color}cc` }}>维度分布 Top 4</div>
+      <div className="flex flex-col gap-1.5">
+        {filtered.map((d, i) => {
+          const pct = (d.value / max) * 100
+          return (
+            <div key={i} className="flex items-center gap-2 text-[10px]">
+              <span className="truncate text-right" style={{ color: '#9ba7c2', width: 56 }} title={d.name}>{d.name}</span>
+              <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{
+                    width: `${pct}%`,
+                    background: `linear-gradient(90deg, ${color}, ${color}88)`,
+                    boxShadow: `0 0 8px ${color}55`,
+                  }}
+                />
+              </div>
+              <span className="font-mono font-semibold" style={{ color, minWidth: 18 }}>{d.value}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function TrendChart({ data }: { data: { date: string; count: number }[] }) {
   const maxVal = Math.max(...data.map(d => d.count), 1)
   const allZero = data.every(d => d.count === 0)
@@ -194,7 +263,7 @@ export default function DashboardPage() {
   const totalAssets = stats.totalPrompts + stats.totalCategories + stats.totalTags
 
   return (
-    <div className="-mx-6 -mt-4 px-6">
+    <div className="-mx-6 px-6 pt-8">
       <style jsx>{`
         @keyframes shimmer {
           0%, 100% { transform: translateX(-100%); }
@@ -220,78 +289,71 @@ export default function DashboardPage() {
         <p className="text-gray-500 text-sm">Prompt Hub 实时数据概览</p>
       </div>
 
-      <div className="glass-card p-8 mb-8 animate-slideUp relative overflow-hidden" style={{ animationDelay: '100ms' }}>
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(30,80,174,0.04) 0%, transparent 70%)' }} />
-        </div>
-
-        <div className="relative z-10 flex flex-col lg:flex-row items-center gap-10">
-          <div className="relative flex-shrink-0">
-            <div className="w-44 h-44 relative flex items-center justify-center">
-              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 180 180">
-                <circle cx="90" cy="90" r="82" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="2" />
-                <circle cx="90" cy="90" r="82" fill="none" stroke="url(#ringGrad)" strokeWidth="3"
-                  strokeDasharray={`${(stats.totalPrompts / Math.max(totalAssets, 1)) * 515} 515`}
-                  strokeLinecap="round" transform="rotate(-90 90 90)"
-                  style={{ animation: 'ringPulse 4s ease-in-out infinite', filter: 'drop-shadow(0 0 6px rgba(30,80,174,0.5))' }} />
-                <circle cx="90" cy="90" r="68" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="2" />
-                <circle cx="90" cy="90" r="68" fill="none" stroke="url(#ringGrad2)" strokeWidth="2.5"
-                  strokeDasharray={`${(stats.totalCopies / Math.max(stats.totalCopies + 100, 1)) * 427} 427`}
-                  strokeLinecap="round" transform="rotate(-90 90 90)"
-                  style={{ animation: 'ringPulse 4s ease-in-out infinite 0.5s', filter: 'drop-shadow(0 0 6px rgba(91,188,160,0.4))' }} />
-                <defs>
-                  <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#1e50ae" />
-                    <stop offset="100%" stopColor="#5b9bd5" />
-                  </linearGradient>
-                  <linearGradient id="ringGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#5bc8a0" />
-                    <stop offset="100%" stopColor="#9b8de8" />
-                  </linearGradient>
-                </defs>
-              </svg>
-              <div className="text-center">
-                <div className="text-3xl font-bold" style={{ color: '#7ba8e8', animation: 'countUp 0.8s ease-out both' }}>
-                  <AnimatedCounter target={stats.totalPrompts} />
-                </div>
-                <div className="text-xs text-gray-500 mt-1">Prompts</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-1 grid grid-cols-2 lg:grid-cols-5 gap-4 w-full">
-            {STATS_CONFIG.map((item, i) => (
-              <div
-                key={item.key}
-                className="group relative p-5 rounded-xl transition-all duration-300 hover:-translate-y-1 cursor-default"
-                style={{
-                  background: `linear-gradient(135deg, ${item.color}08, ${item.color}03)`,
-                  border: `1px solid ${item.color}18`,
-                  animation: 'countUp 0.6s ease-out both',
-                  animationDelay: `${200 + i * 100}ms`,
-                }}
-              >
-                <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{ boxShadow: `0 0 20px ${item.color}15, inset 0 1px 0 ${item.color}20` }} />
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-lg">{item.icon}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${item.color}15`, color: `${item.color}aa` }}>
-                      {item.desc}
-                    </span>
-                  </div>
-                  <div className="text-2xl font-bold mb-1" style={{ color: item.color }}>
-                    <AnimatedCounter target={stats[item.key]} />
-                  </div>
-                  <div className="text-xs text-gray-500">{item.label}</div>
-                </div>
-                <div className="absolute bottom-0 left-3 right-3 h-px opacity-0 group-hover:opacity-100 transition-opacity"
-                  style={{ background: `linear-gradient(90deg, transparent, ${item.color}60, transparent)` }} />
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="mb-8 animate-slideUp" style={{ animationDelay: '100ms' }}>
+        <MagicBento
+          textAutoHide
+          enableStars
+          enableSpotlight
+          enableBorderGlow
+          enableTilt
+          enableMagnetism={false}
+          clickEffect
+          spotlightRadius={400}
+          particleCount={12}
+          glowColor="30, 80, 174"
+          cards={[
+            {
+              label: STATS_CONFIG[0].desc,
+              icon: STATS_CONFIG[0].icon,
+              value: stats.totalPrompts.toLocaleString(),
+              title: STATS_CONFIG[0].label,
+              description: '沉淀的提示词模板总数',
+              glowColor: '123, 168, 232',
+            },
+            {
+              label: STATS_CONFIG[1].desc,
+              icon: STATS_CONFIG[1].icon,
+              value: stats.totalSkills.toLocaleString(),
+              title: STATS_CONFIG[1].label,
+              description: 'Claude Code Skill 模块',
+              glowColor: '91, 200, 160',
+            },
+            {
+              label: STATS_CONFIG[2].desc,
+              icon: STATS_CONFIG[2].icon,
+              value: stats.totalCopies.toLocaleString(),
+              title: STATS_CONFIG[2].label,
+              description: '累计复制使用次数',
+              glowColor: '155, 141, 232',
+              extra: <MiniSparkline data={stats.copyTrend} color="#9b8de8" />,
+            },
+            {
+              label: STATS_CONFIG[3].desc,
+              icon: STATS_CONFIG[3].icon,
+              value: stats.totalCategories.toLocaleString(),
+              title: STATS_CONFIG[3].label,
+              description: '多维度知识体系',
+              glowColor: '91, 155, 213',
+              extra: <MiniBars data={stats.promptsByDimension} color="#5b9bd5" />,
+            },
+            {
+              label: STATS_CONFIG[4].desc,
+              icon: STATS_CONFIG[4].icon,
+              value: stats.totalTags.toLocaleString(),
+              title: STATS_CONFIG[4].label,
+              description: '细粒度标签数',
+              glowColor: '255, 167, 39',
+            },
+            {
+              label: '资产总量',
+              icon: '💎',
+              value: totalAssets.toLocaleString(),
+              title: '知识资产',
+              description: 'Prompt + 分类 + 标签',
+              glowColor: '30, 80, 174',
+            },
+          ]}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
